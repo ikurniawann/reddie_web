@@ -168,3 +168,109 @@ export async function whoAmI(cfg) {
   const u = d.user || d.data || d;
   return { name: u.name ?? null, email: u.email ?? null, role: u.role ?? null };
 }
+
+// ============================================================
+// Tool untuk percakapan — supaya pengunjung bisa mengelola task
+// dengan mengetik, bukan lewat tombol.
+// ============================================================
+
+export const TASK_TOOLS = [
+  {
+    type: 'function',
+    function: {
+      name: 'list_tasks',
+      description: 'Melihat SELURUH task yang sedang berjalan, diurutkan dari tenggat terdekat. Bawaannya mengambil semua, bukan hanya beberapa teratas. Pakai ini sebelum menjawab pertanyaan tentang task, dan sebelum menandai selesai supaya tahu judul persisnya.',
+      parameters: {
+        type: 'object',
+        properties: { limit: { type: 'integer', description: 'Berapa task yang diambil. Kosongkan untuk mengambil semua (maksimal 50).' } },
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'create_task',
+      description: 'Membuat task baru. Gunakan hanya bila pengguna jelas meminta task dibuat.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Judul task, ringkas dan jelas.' },
+          priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
+          due: { type: 'string', description: 'Tenggat format ISO, misalnya 2026-09-15T09:00:00Z. Kosongkan bila tidak disebut.' },
+        },
+        required: ['title'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'complete_task',
+      description: 'Menandai sebuah task selesai. Sebutkan judulnya; sistem akan mencocokkan dengan task yang sedang berjalan.',
+      parameters: {
+        type: 'object',
+        properties: { title: { type: 'string', description: 'Judul task yang mau ditandai selesai.' } },
+        required: ['title'],
+      },
+    },
+  },
+];
+
+// Cocokkan judul yang diketik pengguna dengan task nyata. Model kerap
+// menuliskan judul yang mirip tapi tidak persis, jadi pencocokan bertingkat:
+// sama persis -> mengandung -> tumpang tindih kata terbanyak.
+function matchTask(tasks, wanted) {
+  const w = String(wanted || '').toLowerCase().trim();
+  if (!w) return null;
+  const exact = tasks.find(t => t.title.toLowerCase() === w);
+  if (exact) return exact;
+  const part = tasks.find(t => t.title.toLowerCase().includes(w) || w.includes(t.title.toLowerCase()));
+  if (part) return part;
+  const words = w.split(/\s+/).filter(x => x.length > 2);
+  let best = null, bestScore = 0;
+  for (const t of tasks) {
+    const tl = t.title.toLowerCase();
+    const score = words.filter(x => tl.includes(x)).length;
+    if (score > bestScore) { best = t; bestScore = score; }
+  }
+  return bestScore >= Math.max(1, Math.ceil(words.length / 2)) ? best : null;
+}
+
+/** Jalankan satu panggilan tool dari model. Selalu mengembalikan objek biasa. */
+export async function runTaskTool(cfg, name, args) {
+  try {
+    if (name === 'list_tasks') {
+      // Bawaan sengaja besar: model harus melihat seluruh task berjalan,
+      // bukan hanya beberapa teratas seperti panel. Kalau daftarnya
+      // terpotong, model menyimpulkan task yang ada sebagai tidak ada.
+      const r = await listTasks(cfg, { limit: Math.min(Math.max(Number(args.limit || 50), 1), 50) });
+      return {
+        ok: true, berjalan: r.running, selesai: r.done, total: r.total,
+        tasks: r.tasks.map(t => ({
+          judul: t.title, event: t.eventName, status: t.status,
+          prioritas: t.priority, tenggat: t.due,
+        })),
+      };
+    }
+    if (name === 'create_task') {
+      const t = await createTask(cfg, { title: args.title, priority: args.priority, due: args.due });
+      return { ok: true, dibuat: t.title || args.title };
+    }
+    if (name === 'complete_task') {
+      const r = await listTasks(cfg, { limit: 50 });
+      const hit = matchTask(r.tasks, args.title);
+      if (!hit) {
+        return { ok: false,
+          error: `Tidak ada task berjalan yang cocok dengan "${args.title}".`,
+          pilihan: r.tasks.slice(0, 8).map(t => t.title) };
+      }
+      await updateTask(cfg, hit.id, { status: 'done' });
+      return { ok: true, selesai: hit.title };
+    }
+    return { ok: false, error: 'Tool tidak dikenal: ' + name };
+  } catch (e) {
+    // Kegagalan dikembalikan sebagai data, bukan dilempar — model perlu
+    // membacanya supaya bisa menjelaskan ke pengguna alih-alih diam.
+    return { ok: false, error: e instanceof TaskError ? e.message : 'Gagal menghubungi sistem task.' };
+  }
+}

@@ -27,10 +27,10 @@ async function anthropicComplete({ modelId, system, messages, maxTokens }) {
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ProviderError(data?.error?.message || `anthropic HTTP ${res.status}`, res.status);
   const text = (data.content || []).filter(b => b.type === 'text').map(b => b.text).join('');
-  return { text };
+  return { text, toolCalls: null, raw: null };
 }
 
-async function openaiCompatComplete(provider, { modelId, system, messages, maxTokens }) {
+async function openaiCompatComplete(provider, { modelId, system, messages, maxTokens, tools }) {
   const cfg = OPENAI_COMPAT[provider];
   const key = process.env[cfg.keyEnv];
   if (!cfg?.base || !key) throw new ProviderError(`Provider ${provider} belum dikonfigurasi (${cfg?.keyEnv} kosong)`, 503);
@@ -41,18 +41,23 @@ async function openaiCompatComplete(provider, { modelId, system, messages, maxTo
       model: modelId,
       max_tokens: maxTokens,
       messages: [{ role: 'system', content: system }, ...messages],
+      ...(tools && tools.length ? { tools } : {}),
     }),
     signal: AbortSignal.timeout(60_000),
   });
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new ProviderError(data?.error?.message || `${provider} HTTP ${res.status}`, res.status);
-  return { text: data.choices?.[0]?.message?.content ?? '' };
+  // toolCalls dikembalikan apa adanya; pemanggilnya yang memutuskan mau
+  // menjalankannya atau tidak. 'raw' dibutuhkan untuk disisipkan kembali ke
+  // percakapan sebelum hasil tool dikirim balik ke model.
+  const msg = data.choices?.[0]?.message || {};
+  return { text: msg.content ?? '', toolCalls: msg.tool_calls || null, raw: msg };
 }
 
 // Provider uji: memantulkan pesan terakhir, tanpa API key. Untuk smoke test.
 async function echoComplete({ messages }) {
   const last = messages[messages.length - 1]?.content ?? '';
-  return { text: `Echo dari server: "${last}"` };
+  return { text: `Echo dari server: "${last}"`, toolCalls: null, raw: null };
 }
 
 export class ProviderError extends Error {

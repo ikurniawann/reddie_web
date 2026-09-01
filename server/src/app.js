@@ -10,7 +10,8 @@ import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
 import { publishedContent, buildDraft, publish, latestVersion, restoreToDraft, draftStatus } from './content.js';
 import { transcriptFor, buildPDF, buildXLSX, extractTicket, pushWebhook, SkillError } from './skills.js';
 import { extractText, ExtractError, MAX_ATTACH_BYTES, MAX_PER_SESSION } from './extract.js';
-import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskError } from './tasks.js';
+import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskError,
+         TASK_TOOLS, runTaskTool } from './tasks.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -150,13 +151,44 @@ export function buildApp() {
         blocks.join('\n\n');
     }
 
+    // Bila sistem task tersambung, model diberi tool untuk melihat, membuat,
+    // dan menyelesaikan task — sehingga pengunjung bisa mengelolanya lewat
+    // percakapan biasa. Tanpa konfigurasi, tool tidak dikirim sama sekali.
+    const taskCfg = await taskConfig();
+    const tools = taskReady(taskCfg) ? TASK_TOOLS : null;
+    if (tools) {
+      system += '\n\nKamu punya akses ke sistem manajemen task lewat tool. ' +
+        'Panggil list_tasks sebelum menjawab pertanyaan tentang task, dan sebelum ' +
+        'menandai selesai supaya judulnya persis — hasilnya memuat SEMUA task ' +
+        'berjalan, jadi kalau sebuah judul tidak ada di sana, memang tidak ada. ' +
+        'Buat atau selesaikan task HANYA ' +
+        'bila pengguna memintanya dengan jelas. Setelah tool dijalankan, laporkan ' +
+        'hasilnya apa adanya — jangan mengarang task yang tidak ada di hasil tool.';
+    }
+
     try {
-      const { text } = await complete(mRow.provider, {
-        modelId: mRow.model_id,
-        system: system,
-        messages: history.map(m => ({ role: m.role, content: m.content })),
-        maxTokens: CHAT_MAX_TOKENS,
-      });
+      let convo = history.map(m => ({ role: m.role, content: m.content }));
+      let text = '';
+      // Dibatasi 3 putaran: cukup untuk lihat-lalu-ubah, dan mencegah model
+      // berputar memanggil tool tanpa henti dengan biaya per panggilan.
+      for (let round = 0; round < 3; round++) {
+        const r = await complete(mRow.provider, {
+          modelId: mRow.model_id,
+          system: system,
+          messages: convo,
+          maxTokens: CHAT_MAX_TOKENS,
+          tools,
+        });
+        if (!r.toolCalls || !r.toolCalls.length) { text = r.text; break; }
+        convo.push(r.raw || { role: 'assistant', content: r.text || '', tool_calls: r.toolCalls });
+        for (const tc of r.toolCalls) {
+          let args = {};
+          try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* argumen rusak */ }
+          const out = await runTaskTool(taskCfg, tc.function?.name, args);
+          convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
+        }
+        text = r.text;
+      }
       const reply = text || '(jawaban kosong)';
       await q(`INSERT INTO chat_messages (session_id, role, content) VALUES ($1,'assistant',$2)`, [sid, reply]);
       res.json({ sessionId: sid, reply, model: mRow.model_id, agent: aRow.slug });
@@ -188,7 +220,8 @@ export function buildApp() {
   };
 
   app.get('/api/tasks', taskGuard(async (cfg, req, res) => {
-    const limit = Math.min(Math.max(Number(req.query.limit || 5), 1), 20);
+    const cfgLimit = Number((await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value?.task_limit) || 3;
+    const limit = Math.min(Math.max(Number(req.query.limit || cfgLimit), 1), 20);
     const r = await listTasks(cfg, { limit });
     res.set('cache-control', 'no-store');
     res.json({ configured: true, tasks: r.tasks, running: r.running, done: r.done, total: r.total });
