@@ -1,7 +1,7 @@
 ---
 name: reddie-control
 description: "Mengendalikan tampilan demo Reddie di layar pengunjung (contoh.reddie.id) lewat kode sesi."
-version: 1.1.0
+version: 1.2.0
 author: WIT.ID
 license: MIT
 platforms: [linux, macos]
@@ -21,11 +21,43 @@ lewat kolom chat di halaman itu**, dan kamu menjawab di tempat yang sama.
 ## Cara memulai
 
 Orang tersebut membuka `contoh.reddie.id/dev-reddie/`, masuk ke menu
-**Agentic**, lalu menekan *Izinkan Reddie mengendalikan tampilan*. Muncul
-**kode sesi** enam karakter, misalnya `72AB3F`. Mereka menyebutkan kode itu
-kepadamu.
+**Agentic**, lalu menekan *Izinkan Reddie mengendalikan tampilan*. Tombol
+itulah yang memberi izin — bukan kodenya.
 
-Tanpa kode, tidak ada yang bisa kamu kendalikan. Jangan pernah menebak kode.
+Biasanya kamu **tidak perlu diberi kode**. Begitu mereka bilang sudah siap,
+jemput sendiri:
+
+```bash
+TOKEN=$(grep '^AGENT_BRIDGE_TOKEN=' /home/wit/docker-infra/reddie-api/.env | cut -d= -f2)
+
+curl -s -X POST https://contoh.reddie.id/dev-reddie/api/bridge/attach \
+  -H "authorization: Bearer $TOKEN"
+```
+
+Berhasil, balasannya memuat kodenya — simpan sebagai `$KODE` untuk perintah
+selanjutnya:
+
+```json
+{"kode":"72AB3F","umur_detik":3,"izin":[]}
+```
+
+Penjemputan hanya berhasil bila **persis satu** layar sedang menunggu, dan
+hanya dalam **lima menit** setelah tombol ditekan. Di luar itu server menolak,
+dan pesan penolakannya sudah berupa kalimat yang bisa kamu bacakan langsung
+kepada orangnya:
+
+| Balasan | Artinya | Yang kamu katakan |
+|---|---|---|
+| HTTP 404 | belum ada yang menekan tombol, atau sesinya sudah lewat lima menit | minta mereka membuka menu Agentic dan menekan tombolnya (lagi) |
+| HTTP 409 | beberapa layar menunggu bersamaan | minta mereka membacakan kode sesi di panelnya |
+
+Kalau dapat 409, barulah pakai kode yang mereka sebutkan. **Jangan pernah
+menebak kode**, dan jangan memilih sendiri di antara sesi yang terdaftar di
+`/bridge/sessions` — daftar itu untuk melihat keadaan, bukan untuk memilih
+layar siapa yang mau kamu ambil. Server sengaja menolak memilihkan untukmu.
+
+Begitu terjemput, panel mereka berubah jadi "Agent terhubung" — jadi mereka
+tahu kamu sudah ada di sana. Sebutkan itu supaya tidak terasa mengendap.
 
 ## Menjalankan perintah
 
@@ -33,8 +65,7 @@ Token ada di berkas `.env` server. Baca saat dibutuhkan, jangan disalin ke
 dalam percakapan:
 
 ```bash
-TOKEN=$(grep '^AGENT_BRIDGE_TOKEN=' /home/wit/docker-infra/reddie-api/.env | cut -d= -f2)
-KODE=72AB3F
+KODE=72AB3F   # dari /bridge/attach, atau dari orangnya bila kamu dapat 409
 
 curl -s -X POST https://contoh.reddie.id/dev-reddie/api/bridge/command \
   -H "authorization: Bearer $TOKEN" \

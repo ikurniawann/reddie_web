@@ -18,7 +18,7 @@ import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleT
 import { buatLaporanBerita, ReportError } from './report.js';
 import { fetchTrending, CryptoError, CRYPTO_TOOL, runCryptoTool } from './crypto.js';
 import { cekOperator, kirimKeSesi, daftarSesi, ambilInbox, operatorSiap, ACTIONS, TARGETS, PERMISSIONS,
-         BridgeError } from './bridge.js';
+         BridgeError, pasangOtomatis } from './bridge.js';
 import { checkConnections, listWorkflows, runWorkflow, n8nReady,
          AUTOMATION_TOOLS, runAutomationTool, AutomationError } from './automation.js';
 
@@ -396,6 +396,17 @@ export function buildApp() {
   });
 
   // Agent mengambil pesan yang ditulis pengunjung di kolom chat.
+  // Menjemput sesi tanpa kode. Sengaja POST, bukan GET: panggilan ini
+  // mengubah keadaan — sesi yang terjemput ditandai sudah diklaim.
+  app.post('/api/bridge/attach', (req, res) => {
+    try {
+      cekOperator(req.headers.authorization);
+      res.json(pasangOtomatis());
+    } catch (e) {
+      res.status(e instanceof BridgeError ? e.status : 500).json({ error: e.message });
+    }
+  });
+
   app.get('/api/bridge/inbox', (req, res) => {
     try {
       cekOperator(req.headers.authorization);

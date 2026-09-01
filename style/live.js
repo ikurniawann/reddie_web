@@ -16,7 +16,7 @@
     // Sesi HANYA dimulai pengunjung. Tidak ada koneksi otomatis saat panel
     // dibuka — agent tidak boleh bisa menempel ke tab orang yang tidak
     // mengundangnya.
-    var agentik = { ws: null, kode: null, izin: {}, keHermes: false };
+    var agentik = { ws: null, kode: null, izin: {}, keHermes: false, dijemput: false };
 
     var state = {
         ready: false,          // true bila /api/content berhasil dimuat
@@ -847,7 +847,8 @@
 
     function putusAgentik() {
         if (agentik.ws) { try { agentik.ws.close(); } catch (e) {} }
-        agentik.ws = null; agentik.kode = null; agentik.izin = {}; agentik.keHermes = false;
+        agentik.ws = null; agentik.kode = null; agentik.izin = {};
+        agentik.keHermes = false; agentik.dijemput = false;
         spandukKendali(false);
         renderAgentik();
         agentikStatus('Sesi dihentikan. Reddie tidak lagi mengendalikan tampilan ini.');
@@ -946,13 +947,23 @@
                 agentik.kode = m.kode;
                 spandukKendali(true);
                 renderAgentik();
-                agentikStatus('Tersambung. Berikan kode ini ke agent.');
+                agentikStatus('Menunggu agent menemukan layar ini…');
+            } else if (m.type === 'claimed') {
+                // Server memberi tahu bahwa agent sudah menjemput sesi ini.
+                // Pengunjung perlu melihatnya: tanpa itu tidak ada bedanya
+                // antara "agent belum datang" dan "agent sudah mengawasi".
+                agentik.dijemput = true;
+                renderAgentik();
+                agentikStatus('Agent sudah terhubung ke layar ini.', '#16a34a');
             } else if (m.type === 'command') {
                 jalankanTindakan(m);
             }
         };
         ws.onclose = function () {
-            if (agentik.ws === ws) { agentik.ws = null; agentik.kode = null; spandukKendali(false); renderAgentik(); }
+            if (agentik.ws === ws) {
+                agentik.ws = null; agentik.kode = null; agentik.dijemput = false;
+                spandukKendali(false); renderAgentik();
+            }
         };
         ws.onerror = function () { agentikStatus('Koneksi gagal. Coba lagi sebentar.', '#b91c1c'); };
     }
@@ -969,13 +980,22 @@
         }).join(' ');
 
         box.innerHTML = aktif
-            ? '<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);' +
+            ? '<div style="background:' + (agentik.dijemput ? 'rgba(22,163,74,.08)' : 'rgba(234,179,8,.09)') + ';' +
+                'border:1px solid ' + (agentik.dijemput ? 'rgba(22,163,74,.25)' : 'rgba(234,179,8,.3)') + ';' +
                 'border-radius:11px;padding:.75rem .85rem;margin-bottom:.7rem;">' +
-                '<div style="font-size:.7rem;color:#166534;font-weight:800;letter-spacing:.06em;">KODE SESI</div>' +
-                '<div style="font-family:ui-monospace,monospace;font-size:1.5rem;font-weight:800;' +
-                  'color:#111827;letter-spacing:.12em;">' + esc(agentik.kode) + '</div>' +
-                '<div style="font-size:.68rem;color:#4b5563;margin-top:.2rem;">' +
-                  'Berikan kode ini ke agent agar ia bisa mengendalikan tampilan ini.</div>' +
+                '<div style="display:flex;align-items:center;gap:.4rem;">' +
+                  '<span style="width:8px;height:8px;border-radius:99px;background:' +
+                    (agentik.dijemput ? '#16a34a' : '#eab308') + ';flex:none;"></span>' +
+                  '<span style="font-size:.78rem;font-weight:800;color:#111827;">' +
+                    (agentik.dijemput ? 'Agent terhubung' : 'Menunggu agent') + '</span></div>' +
+                '<div style="font-size:.68rem;color:#4b5563;margin-top:.3rem;line-height:1.5;">' +
+                  (agentik.dijemput
+                    ? 'Layar ini sudah ditemukan. Anda bisa mulai memberi perintah.'
+                    : 'Biasanya agent menemukan layar ini sendiri — cukup katakan Anda sudah siap. ' +
+                      'Kode di bawah hanya perlu dibacakan bila ada beberapa orang membuka demo bersamaan.') +
+                '</div>' +
+                '<div style="font-family:ui-monospace,monospace;font-size:.95rem;font-weight:700;' +
+                  'color:#6b7280;letter-spacing:.12em;margin-top:.45rem;">' + esc(agentik.kode) + '</div>' +
               '</div>' +
               '<div style="font-size:.68rem;color:#6b7280;margin-bottom:.35rem;">Izin yang sudah diberikan:</div>' +
               '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.7rem;">' + izinBaris + '</div>' +

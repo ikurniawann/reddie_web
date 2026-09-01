@@ -9,9 +9,14 @@
 //    meneruskan perintah sembarangan, kalimat pengunjung anonim jadi
 //    jalan masuk ke shell tersebut.
 //
-// 2. PENGUNJUNG YANG MEMULAI. Sesi hanya terbentuk bila pengunjung
-//    menekan tombol izin, dan kodenya dibuat di sisi mereka. Tidak ada
-//    cara agent "menemukan" tab orang yang tidak mengundangnya.
+// 2. PENGUNJUNG YANG MEMULAI. Sesi hanya terbentuk bila pengunjung menekan
+//    tombol izin. Itulah tindakan yang memberi izin — bukan kodenya. Kode
+//    berperan sebagai PEMBEDA saat beberapa layar terbuka bersamaan, jadi
+//    sesi tunggal yang baru saja ditawarkan boleh dijemput tanpa kode
+//    (lihat pasangOtomatis). Yang tidak pernah boleh terjadi adalah agent
+//    menempel ke tab yang tidak menawarkan diri, atau memilih sendiri di
+//    antara beberapa tab — pada keadaan itu server menolak dan menuntut
+//    kodenya disebut.
 //
 // 3. KEMAMPUAN SENSITIF TETAP DI BALIK IZIN BROWSER. Kamera, mikrofon,
 //    layar, dan papan klip hanya bisa DIMINTA; yang memberi izin tetap
@@ -27,6 +32,12 @@ import { WebSocketServer } from 'ws';
 const OPERATOR_TOKEN = process.env.AGENT_BRIDGE_TOKEN || '';
 const SESSION_TTL = 30 * 60 * 1000;      // 30 menit
 const MAX_SESSIONS = 200;
+
+// Selama jendela ini setelah pengunjung menekan tombol izin, sesinya boleh
+// dijemput agent tanpa menyebut kode. Sengaja pendek: yang membuatnya aman
+// bukan kerahasiaan kodenya, melainkan bahwa penjemputan hanya mungkin
+// beberapa menit setelah seseorang sengaja menawarkan layarnya.
+const ATTACH_WINDOW = 5 * 60 * 1000;     // 5 menit
 
 /** Daftar tindakan yang boleh diminta agent. Tidak ada jalan lain. */
 export const ACTIONS = {
@@ -52,7 +63,7 @@ export class BridgeError extends Error {
   constructor(message, status = 400) { super(message); this.status = status; }
 }
 
-const sessions = new Map();   // kode -> { ws, dibuat, terakhir, izin:Set, log:[] }
+const sessions = new Map();   // kode -> { ws, dibuat, terakhir, izin:Set, log:[], inbox:[], diklaim }
 
 const bersihkan = () => {
   const now = Date.now();
@@ -104,7 +115,41 @@ export function daftarSesi() {
     izin: [...s.izin],
     tindakan: s.log.length,
     menunggu: s.inbox.length,
+    diklaim: s.diklaim,
   }));
+}
+
+/**
+ * Menjemput sesi tanpa kode.
+ *
+ * Berhasil HANYA bila persis satu sesi sedang menawarkan diri. Nol berarti
+ * tidak ada yang menekan tombol; lebih dari satu berarti agent tidak boleh
+ * menebak layar siapa yang dimaksud — keduanya ditolak dengan alasan yang
+ * bisa dibacakan agent kepada orangnya, bukan sekadar kode status.
+ */
+export function pasangOtomatis() {
+  bersihkan();
+  const now = Date.now();
+  const kandidat = [...sessions.entries()]
+    .filter(([, s]) => !s.diklaim && now - s.dibuat < ATTACH_WINDOW)
+    .sort((a, b) => b[1].dibuat - a[1].dibuat);
+
+  if (!kandidat.length) {
+    const adaLain = sessions.size > 0;
+    throw new BridgeError(adaLain
+      ? 'Tidak ada sesi baru yang menunggu. Sesi yang ada sudah dijemput atau dibuka lebih dari 5 menit lalu — minta kodenya, atau minta orangnya menekan tombol izin sekali lagi.'
+      : 'Belum ada yang menawarkan layarnya. Minta orangnya membuka menu Agentic lalu menekan tombol izin.', 404);
+  }
+  if (kandidat.length > 1) {
+    throw new BridgeError(
+      `Ada ${kandidat.length} layar yang menunggu bersamaan, jadi tidak jelas yang mana. Minta orangnya membacakan kode sesi di panel Agentic.`, 409);
+  }
+
+  const [kode, s] = kandidat[0];
+  s.diklaim = true;
+  s.terakhir = now;
+  s.ws.send(JSON.stringify({ type: 'claimed' }));
+  return { kode, umur_detik: Math.round((now - s.dibuat) / 1000), izin: [...s.izin] };
 }
 
 /** Ambil dan kosongkan pesan yang menunggu dari pengunjung. */
@@ -128,6 +173,9 @@ export function kirimKeSesi(kode, action, arg) {
   }
 
   s.terakhir = Date.now();
+  // Sesi yang sudah diperintah bukan lagi sesi yang menunggu dijemput, jadi
+  // penjemputan otomatis berikutnya tidak akan mengambilnya diam-diam.
+  if (!s.diklaim) { s.diklaim = true; s.ws.send(JSON.stringify({ type: 'claimed' })); }
   s.log.push({ at: Date.now(), ...cmd });
   if (s.log.length > 100) s.log.shift();
   s.ws.send(JSON.stringify({ type: 'command', ...cmd }));
@@ -147,7 +195,8 @@ export function attachBridge(server) {
     // Kode dibuat SERVER, bukan diminta klien: kode tebakan tidak boleh
     // membuat orang lain menempel ke sesi yang bukan miliknya.
     const kode = crypto.randomBytes(3).toString('hex').toUpperCase();
-    const s = { ws, dibuat: Date.now(), terakhir: Date.now(), izin: new Set(), log: [], inbox: [] };
+    const s = { ws, dibuat: Date.now(), terakhir: Date.now(), izin: new Set(),
+                log: [], inbox: [], diklaim: false };
 
     if (sessions.size >= MAX_SESSIONS) bersihkan();
     if (sessions.size >= MAX_SESSIONS) { ws.close(1013, 'Terlalu banyak sesi'); return; }
