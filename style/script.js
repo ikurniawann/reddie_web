@@ -746,60 +746,33 @@ function setupDashboardDemo() {
                 break;
 
             case "Analyze":
+                // Panel harga kripto. Isinya diisi live.js dari /api/crypto.
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Performance</span>
-                        <span class="stats-tab">Usage</span>
+                        <span class="stats-tab active" data-cms="console.inv_tab">Trending</span>
+                        <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card">
-                            <div class="billing-header">
-                                <h3>Analytics & Trends</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-chart-line"></i></span>
-                            </div>
-                            <div>
-                                <div class="section-label">PERFORMANCE METRICS</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card">
-                                        <span class="dist-type">Resolution Rate</span>
-                                        <span class="dist-val" style="color: #22c55e;">94.6%</span>
-                                    </div>
-                                    <div class="dist-card">
-                                        <span class="dist-type">AI Accuracy</span>
-                                        <span class="dist-val" style="color: #a855f7;">98.9%</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type">Monthly Savings</span>
-                                        <span class="dist-val" style="color: #111827;">$2,450.00 <span style="font-size: 0.75rem; color: #22c55e; font-weight: 600;">(+12.4%)</span></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="section-label">TOKEN CONSUMPTION</div>
-                                <div class="progress-bars-grid" style="grid-template-columns: 1fr; padding: 0.8rem 1rem;">
-                                    <div style="font-size: 0.75rem; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                        <span>Token Limit (920k / 1M)</span>
-                                        <span>92%</span>
-                                    </div>
-                                    <div class="bar-container" style="width: 100%; height: 8px;">
-                                        <div class="bar bar-sentiment" style="width: 92%; height: 100%; bottom: auto; left: 0;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn-escalate">Export PDF Report</button>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
+                                data-cms="console.inv_title">Investment</h3>
+                            <i class="fa-solid fa-chart-line" style="font-size:1.05rem;color:#374151;"></i>
+                        </div>
+                        <div data-cryptopanel>
+                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Memuat harga…</p>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "AI Analytics Hub";
-                welcomeSubtitleText = "Run complex natural language queries on customer interaction data.";
+                welcomeTitleText = "Investment Console";
+                welcomeSubtitleText = "Pantau pasar kripto dan minta penjelasannya lewat percakapan.";
                 chipsHTML = `
-                    <button class="chip">Plot resolution rates</button>
-                    <button class="chip">Show monthly cost trends</button>
-                    <button class="chip">Calculate SLA compliance</button>
-                    <button class="chip">Generate CSV report</button>
+                    <button class="chip">Kripto apa yang sedang trending?</button>
+                    <button class="chip">Jelaskan pergerakan 24 jam terakhir</button>
+                    <button class="chip">Mana yang naik paling tinggi hari ini?</button>
+                    <button class="chip">Apa itu market cap dan volume?</button>
                 `;
                 break;
-                
+
             case "Research":
                 // Panel berita trending. Isinya diisi live.js dari /api/news.
                 statsHTML = `
@@ -1068,6 +1041,7 @@ function setupDashboardDemo() {
         if (tabName === 'Real-Time Discussion' && window.REDDIE_TASKS) window.REDDIE_TASKS();
         if (tabName === 'Task & Scheduling' && window.REDDIE_SCHEDULE) window.REDDIE_SCHEDULE();
         if (tabName === 'Research' && window.REDDIE_NEWS) window.REDDIE_NEWS();
+        if (tabName === 'Analyze' && window.REDDIE_CRYPTO) window.REDDIE_CRYPTO();
     }
     
     function getAgentMockResponse(query, turnNum) {

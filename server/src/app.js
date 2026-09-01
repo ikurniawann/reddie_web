@@ -14,6 +14,7 @@ import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskE
          TASK_TOOLS, runTaskTool, listSchedule, createMeeting } from './tasks.js';
 import { googleStatus } from './google.js';
 import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleTool } from './news.js';
+import { fetchTrending, CryptoError, CRYPTO_TOOL, runCryptoTool } from './crypto.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -159,13 +160,17 @@ export function buildApp() {
     const taskCfg = await taskConfig();
     const intg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
     // Tool berita selalu tersedia: tidak butuh kredensial apa pun.
-    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL, ARTICLE_TOOL];
+    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL, ARTICLE_TOOL, CRYPTO_TOOL];
     const toolCtxHasGoogle = !!String(req.headers['x-google-token'] || '');
     system += '\n\nKamu bisa mengambil berita terbaru lewat tool get_trending_news. ' +
       'Pakai itu bila ditanya soal berita atau tren, sebutkan sumber dan waktunya, ' +
       'dan jangan mengarang judul yang tidak ada di hasil tool. Bila diminta ' +
       'MERINGKAS sebuah berita, panggil read_news_article dulu untuk membaca ' +
-      'isinya — dilarang meringkas hanya dari judul, karena hasilnya jadi tebakan.';
+      'isinya — dilarang meringkas hanya dari judul, karena hasilnya jadi tebakan.\n' +
+      'Kamu juga bisa mengambil harga kripto trending lewat get_trending_crypto. ' +
+      'Laporkan angkanya apa adanya dan sebutkan waktu pembaruannya. SELALU ' +
+      'ingatkan bahwa itu bukan saran investasi, dan JANGAN PERNAH menyarankan ' +
+      'membeli, menjual, atau menahan aset apa pun — cukup sampaikan datanya.';
     if (taskReady(taskCfg)) {
       system += '\n\nKamu punya akses ke sistem manajemen task lewat tool.\n' +
         'ATURAN MUTLAK: kamu TIDAK BOLEH mengatakan sebuah task sudah dibuat, ' +
@@ -223,6 +228,7 @@ export function buildApp() {
                                  lang: intg.news_lang, country: intg.news_country };
           const out = fname === 'get_trending_news' ? await runNewsTool(args, newsDefaults)
                     : fname === 'read_news_article' ? await runArticleTool(args, newsDefaults)
+                    : fname === 'get_trending_crypto' ? await runCryptoTool(args)
                     : await runTaskTool(taskCfg, fname, args, toolCtx);
           if (out && out.ok && MUTATING.includes(fname)) tasksChanged = true;
           convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
@@ -288,6 +294,24 @@ export function buildApp() {
     const t = await updateTask(cfg, req.params.id, { status: req.body?.status, title: req.body?.title });
     res.json({ task: t });
   }));
+
+  // ═══════════════ KRIPTO TRENDING ═══════════════
+
+  app.get('/api/crypto', async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try {
+      const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+      const r = await fetchTrending({ limit: Math.min(Math.max(Number(cfg.crypto_limit) || 8, 1), 15) });
+      res.set('cache-control', 'public, max-age=120');
+      res.json({ ok: true, ...r });
+    } catch (e) {
+      // Sama seperti panel task: badan respons 5xx ditimpa Cloudflare, jadi
+      // kegagalan dilaporkan sebagai 200 bertanda agar pesannya sampai.
+      res.json({ ok: false, unavailable: true, coins: [],
+                 error: e instanceof CryptoError ? e.message : 'Gagal memuat data kripto.' });
+    }
+  });
 
   // ═══════════════ BERITA TRENDING ═══════════════
 

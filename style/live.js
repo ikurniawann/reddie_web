@@ -702,6 +702,106 @@
         }).catch(function (err) { meetMsg(err.message, true); });
     }
 
+    // ── Panel kripto (Investment) ────────────────────────────────────
+    function uang(n) {
+        if (n == null) return '—';
+        if (n >= 1e9) return '$' + (n / 1e9).toFixed(2) + ' M';      // miliar
+        if (n >= 1e6) return '$' + (n / 1e6).toFixed(1) + ' jt';
+        if (n >= 1e3) return '$' + (n / 1e3).toFixed(1) + ' rb';
+        return '$' + n.toFixed(2);
+    }
+
+    // Koin murah butuh banyak desimal, koin mahal justru terganggu olehnya.
+    function harga(n) {
+        if (n == null) return '—';
+        if (n >= 1000) return '$' + n.toLocaleString('en-US', { maximumFractionDigits: 0 });
+        if (n >= 1)    return '$' + n.toFixed(2);
+        if (n >= 0.01) return '$' + n.toFixed(4);
+        return '$' + n.toFixed(8).replace(/0+$/, '');
+    }
+
+    function coinCard(c) {
+        var naik = (c.change24h || 0) >= 0;
+        var warna = naik ? '#16a34a' : '#dc2626';
+        var panah = naik ? '&#9650;' : '&#9660;';
+        var pct = c.change24h == null ? '—'
+                : (naik ? '+' : '') + c.change24h.toFixed(2) + '%';
+        return '<button data-coin="' + esc(c.name) + '" style="display:block;width:100%;text-align:left;' +
+               'background:#fff;border:1px solid rgba(0,0,0,.07);border-left:3px solid ' + warna + ';' +
+               'border-radius:12px;padding:.7rem .75rem;margin-bottom:.55rem;cursor:pointer;font:inherit;' +
+               'transition:box-shadow .15s,transform .15s;" ' +
+               'onmouseover="this.style.boxShadow=\'0 3px 12px rgba(0,0,0,.09)\';this.style.transform=\'translateY(-1px)\'" ' +
+               'onmouseout="this.style.boxShadow=\'none\';this.style.transform=\'none\'">' +
+                 '<div style="display:flex;align-items:center;gap:.55rem;">' +
+                   (c.logo ? '<img src="' + esc(c.logo) + '" alt="" width="26" height="26" loading="lazy" ' +
+                             'style="border-radius:50%;flex:0 0 auto;background:#f3f4f6;">' : '') +
+                   '<div style="flex:1;min-width:0;">' +
+                     '<div style="display:flex;align-items:baseline;gap:.35rem;">' +
+                       '<span style="font-size:.82rem;font-weight:800;color:#111827;">' + esc(c.symbol) + '</span>' +
+                       (c.rank ? '<span style="font-size:.6rem;color:#9ca3af;font-weight:600;">#' + c.rank + '</span>' : '') +
+                     '</div>' +
+                     '<div style="font-size:.66rem;color:#6b7280;overflow:hidden;text-overflow:ellipsis;' +
+                     'white-space:nowrap;">' + esc(c.name) + '</div>' +
+                   '</div>' +
+                   '<div style="text-align:right;flex:0 0 auto;">' +
+                     '<div style="font-size:.85rem;font-weight:800;color:#111827;font-variant-numeric:tabular-nums;">' +
+                       harga(c.price) + '</div>' +
+                     '<div style="font-size:.68rem;font-weight:700;color:' + warna + ';font-variant-numeric:tabular-nums;">' +
+                       panah + ' ' + pct + '</div>' +
+                   '</div>' +
+                 '</div>' +
+                 (c.sparkline
+                   ? '<img src="' + esc(c.sparkline) + '" alt="" loading="lazy" ' +
+                     'style="width:100%;height:26px;object-fit:cover;margin-top:.45rem;opacity:.75;">'
+                   : '') +
+                 '<div style="display:flex;gap:.9rem;margin-top:.4rem;font-size:.62rem;color:#6b7280;">' +
+                   '<span>Kap. ' + uang(c.marketCap) + '</span>' +
+                   '<span>Vol. ' + uang(c.volume) + '</span>' +
+                 '</div>' +
+               '</button>';
+    }
+
+    function loadCrypto() {
+        var box = document.querySelector('[data-cryptopanel]');
+        if (!box) return Promise.resolve();
+        return fetch(API + '/crypto', { signal: AbortSignal.timeout(15000) })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (d) {
+                if (d.unavailable || !d.coins || !d.coins.length) {
+                    box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0 0 .6rem;">' +
+                        '<i class="fa-solid fa-triangle-exclamation"></i> ' +
+                        esc(d.error || 'Data harga tidak tersedia.') + '</p>' +
+                        '<button data-cryptoretry style="width:100%;background:none;color:#374151;' +
+                        'border:1px solid rgba(0,0,0,.15);border-radius:9px;padding:.55rem;' +
+                        'font:700 .78rem system-ui;cursor:pointer;">Coba lagi</button>';
+                    return;
+                }
+                var jam = d.at ? new Date(d.at).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+                box.innerHTML =
+                    '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
+                      'margin-bottom:.55rem;">SEDANG TRENDING</div>' +
+                    d.coins.map(coinCard).join('') +
+                    '<p style="font-size:.62rem;color:#9ca3af;margin:.5rem 0 0;text-align:center;line-height:1.5;">' +
+                      (jam ? 'Diperbarui ' + esc(jam) + (d.stale ? ' · sumber sedang bermasalah' : '') + ' · ' : '') +
+                      'Sumber CoinGecko. Bukan saran investasi.</p>';
+            })
+            .catch(function () {
+                box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">Data harga tidak terjangkau.</p>';
+            });
+    }
+    window.REDDIE_CRYPTO = loadCrypto;
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-cryptoretry]')) { e.preventDefault(); loadCrypto(); return; }
+        var c = e.target.closest('[data-coin]');
+        if (!c) return;
+        e.preventDefault();
+        if (window.reddieSend) {
+            window.reddieSend('Jelaskan pergerakan harga ' + c.dataset.coin +
+                              ' dalam 24 jam terakhir dan apa yang membuatnya trending.');
+        }
+    });
+
     // ── Panel berita trending ────────────────────────────────────────
     function sinceLabel(iso) {
         if (!iso) return '';
@@ -862,7 +962,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h3';
+        sc.src = 'style/editor.js?v=20260901-h4';
         document.body.appendChild(sc);
     }
 
