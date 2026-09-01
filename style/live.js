@@ -542,9 +542,12 @@
                   'border:1px solid #dadce0;border-radius:8px;padding:.6rem;font:600 .8rem system-ui;' +
                   'cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;">' +
                   '<i class="fa-brands fa-google" style="color:#4285f4;"></i> Masuk dengan Google</button>'
-                : '<p style="font-size:.75rem;color:#ca8a04;margin:0 0 .7rem;line-height:1.5;">' +
-                  '<i class="fa-solid fa-circle-exclamation"></i> Google Calendar belum dikonfigurasi. ' +
-                  'Meeting akan dicatat sebagai jadwal internal.</p>') +
+                : '<div style="background:rgba(202,138,4,.08);border:1px solid rgba(202,138,4,.25);' +
+                  'border-radius:9px;padding:.6rem .7rem;margin:0 0 .8rem;">' +
+                  '<p style="font-size:.74rem;color:#92400e;margin:0;line-height:1.5;">' +
+                  '<i class="fa-solid fa-circle-exclamation"></i> <b>Tombol masuk Google belum aktif.</b><br>' +
+                  'Isi <b>Google OAuth Client ID</b> di panel admin &rarr; Konten situs &rarr; ' +
+                  'Integrasi &amp; otomasi. Sementara ini meeting dicatat sebagai jadwal internal.</p></div>') +
             '<div style="display:flex;flex-direction:column;gap:.5rem;">' +
               '<input data-mtitle placeholder="Judul meeting" style="font:inherit;font-size:.78rem;padding:.5rem .6rem;' +
                 'border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
@@ -735,7 +738,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g4';
+        sc.src = 'style/editor.js?v=20260901-g5';
         document.body.appendChild(sc);
     }
 
