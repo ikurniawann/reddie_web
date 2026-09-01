@@ -324,6 +324,8 @@
         return '<div style="background:rgba(0,0,0,.045);border:1px solid rgba(0,0,0,.05);border-radius:11px;' +
                'padding:.7rem .8rem;margin-bottom:.6rem;">' +
                '<div style="font-size:.8rem;color:#6b7280;line-height:1.3;">' + esc(t.title) + '</div>' +
+               (t.eventName ? '<div style="font-size:.66rem;color:#9ca3af;line-height:1.3;">' +
+                              esc(t.eventName) + '</div>' : '') +
                '<div style="font-size:.98rem;color:#111827;font-weight:700;line-height:1.35;margin-top:.1rem;' +
                (t.done ? 'text-decoration:line-through;opacity:.5;' : '') + '">' + esc(whenLabel(t)) + '</div>' +
                '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.3rem;">' +
@@ -345,8 +347,12 @@
         }
         var S = (state.settings.console || {});
         var tasks = d.tasks || [];
-        var done = tasks.filter(function (t) { return t.done; }).length;
-        var pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+        // Panel hanya menampilkan beberapa teratas, tapi progres dihitung dari
+        // SELURUH task di sistem supaya angkanya tidak menyesatkan.
+        var running = (typeof d.running === 'number') ? d.running : tasks.length;
+        var done = (typeof d.done === 'number') ? d.done : 0;
+        var total = (typeof d.total === 'number') ? d.total : (running + done);
+        var pct = total ? Math.round(done / total * 100) : 0;
         var lbl = function (k, f) { return esc(S[k] || f); };
 
         box.innerHTML =
@@ -365,7 +371,8 @@
               '<div style="height:9px;background:#d6d3d1;border-radius:99px;overflow:hidden;">' +
                 '<div style="height:100%;width:' + pct + '%;background:#a855f7;border-radius:99px;transition:width .4s;"></div>' +
               '</div>' +
-              '<div style="font-size:.68rem;color:#6b7280;margin-top:.45rem;">' + done + ' dari ' + tasks.length + ' task selesai</div>' +
+              '<div style="font-size:.68rem;color:#6b7280;margin-top:.45rem;">' + done + ' dari ' + total +
+              ' task selesai · ' + running + ' sedang berjalan</div>' +
             '</div>' +
 
             '<div data-newwrap style="display:none;gap:.4rem;margin-top:.9rem;">' +
@@ -544,7 +551,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f8';
+        sc.src = 'style/editor.js?v=20260901-f9';
         document.body.appendChild(sc);
     }
 

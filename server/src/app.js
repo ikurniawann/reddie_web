@@ -187,10 +187,11 @@ export function buildApp() {
     }
   };
 
-  app.get('/api/tasks', taskGuard(async (cfg, _req, res) => {
-    const tasks = await listTasks(cfg);
+  app.get('/api/tasks', taskGuard(async (cfg, req, res) => {
+    const limit = Math.min(Math.max(Number(req.query.limit || 5), 1), 20);
+    const r = await listTasks(cfg, { limit });
     res.set('cache-control', 'no-store');
-    res.json({ configured: true, tasks });
+    res.json({ configured: true, tasks: r.tasks, running: r.running, done: r.done, total: r.total });
   }));
 
   app.post('/api/tasks', taskGuard(async (cfg, req, res) => {
@@ -459,8 +460,9 @@ export function buildApp() {
     if (missing.length) return res.json({ ok: false, error: 'Belum lengkap: ' + missing.join(', ') + '.' });
     try {
       const who = await whoAmI(cfg);
-      const tasks = await listTasks(cfg);
-      res.json({ ok: true, who, count: tasks.length });
+      const r = await listTasks(cfg, { limit: 5 });
+      res.json({ ok: true, who, running: r.running, done: r.done, total: r.total, events: r.events.length,
+                 sample: r.tasks.map(t => t.title) });
     } catch (e) {
       res.json({ ok: false, error: e instanceof TaskError ? e.message : 'Gagal menghubungi sistem task.' });
     }

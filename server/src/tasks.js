@@ -27,6 +27,8 @@ export async function taskConfig() {
     base: String(v.task_base || '').replace(/\/$/, ''),
     phone: String(v.task_phone || '').trim(),
     token: process.env.TASK_API_TOKEN || '',
+    eventId: String(v.task_event_id || '').trim(),
+    divisionId: String(v.task_division_id || '').trim(),
   };
 }
 
@@ -85,16 +87,65 @@ const norm = (t) => ({
   assignee: t.assignee?.name ?? t.assigneeName ?? t.owner?.name ?? null,
 });
 
-export async function listTasks(cfg) {
-  const d = await call(cfg, '/tasks');
-  return asList(d).map(norm);
+// Task di sistem ini terikat pada EVENT, dan ?mine=1 hanya mengembalikan
+// yang ditugaskan ke pemilik token. Untuk menampilkan "yang sedang berjalan"
+// secara utuh, daftar event ditelusuri lalu task tiap event digabung.
+export async function listEvents(cfg) {
+  const d = await call(cfg, '/events');
+  return asList(d).map(e => ({ id: e.id, name: e.name || e.title || '' })).filter(e => e.id);
 }
 
-export async function createTask(cfg, { title, priority, due }) {
+const RUNNING = /^(todo|in_progress|pending|review|doing|blocked)$/;
+
+export async function listTasks(cfg, { limit = 5, onlyRunning = true } = {}) {
+  const events = (await listEvents(cfg)).slice(0, 12);   // batas kewajaran
+  const perEvent = await Promise.all(events.map(async (ev) => {
+    try {
+      const d = await call(cfg, `/tasks?eventId=${encodeURIComponent(ev.id)}`);
+      return asList(d).map(t => ({ ...norm(t), eventId: ev.id, eventName: ev.name }));
+    } catch {
+      return [];   // satu event bermasalah tidak boleh mengosongkan panel
+    }
+  }));
+
+  const all0 = perEvent.flat();
+  const doneCount = all0.filter(t => t.done).length;
+  let all = onlyRunning ? all0.filter(t => !t.done && RUNNING.test(t.status)) : all0;
+
+  // Yang paling dekat tenggatnya lebih dulu; tanpa tenggat ditaruh belakangan.
+  all.sort((x, y) => {
+    if (!x.due && !y.due) return 0;
+    if (!x.due) return 1;
+    if (!y.due) return -1;
+    return new Date(x.due) - new Date(y.due);
+  });
+  return {
+    tasks: all.slice(0, limit),
+    running: all.length,
+    done: doneCount,
+    total: all0.length,
+    events,
+  };
+}
+
+export async function createTask(cfg, { title, priority, due, eventId, divisionId }) {
   const t = String(title || '').trim();
   if (!t) throw new TaskError('Judul task wajib diisi.', 400);
   if (t.length > 200) throw new TaskError('Judul task maksimal 200 karakter.', 400);
-  const body = { title: t };
+
+  // eventId & divisionId wajib bagi API. Bila tidak dikonfigurasi, event
+  // pertama dipakai supaya tombol tetap berfungsi tanpa setup tambahan.
+  let ev = eventId || cfg.eventId;
+  if (!ev) {
+    const events = await listEvents(cfg);
+    if (!events.length) throw new TaskError('Belum ada event di sistem task, jadi task baru tidak bisa ditempatkan.', 409);
+    ev = events[0].id;
+  }
+  const body = {
+    eventId: ev,
+    divisionId: divisionId || cfg.divisionId || 'production',
+    title: t,
+  };
   if (priority) body.priority = String(priority).slice(0, 20);
   if (due) body.dueDate = String(due).slice(0, 40);
   const d = await call(cfg, '/tasks', { method: 'POST', body });

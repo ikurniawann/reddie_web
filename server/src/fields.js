@@ -150,6 +150,16 @@ export const FIELDS = {
     help: 'Basis API manajemen task. Kosongkan untuk mematikan panel Task Focus.',
     value: 'https://ingat.reddie.id/api/agent',
   },
+  'integrations.task_event_id': {
+    label: 'ID event untuk task baru', type: 'text', max: 60, private: true,
+    help: 'Task baru dari panel akan masuk ke event ini. Kosongkan untuk memakai event pertama yang ditemukan.',
+    value: '',
+  },
+  'integrations.task_division_id': {
+    label: 'ID divisi untuk task baru', type: 'text', max: 40, private: true,
+    help: 'Divisi yang dipakai saat membuat task dari panel, misalnya production.',
+    value: 'production',
+  },
   'integrations.sync_label': {
     label: 'Judul kartu hasil sync', type: 'text', max: 40,
     help: 'Judul kartu yang muncul di chat setelah pengunjung menekan tombol Sync.',
