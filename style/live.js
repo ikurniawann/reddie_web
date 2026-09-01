@@ -502,18 +502,25 @@
 
     function schedRow(e) {
         var d = new Date(e.date);
-        var when = isNaN(d) ? String(e.date || '') : whenLabel({ due: e.date });
+        var when = e.allDay
+            ? (isNaN(d) ? String(e.date) : d.toLocaleDateString('id-ID', { day: 'numeric', month: 'long' }) + ' · sepanjang hari')
+            : (isNaN(d) ? String(e.date || '') : whenLabel({ due: e.date }));
         var kind = String(e.kind || '').toLowerCase();
         var col = kind === 'meeting' ? '#7c3aed' : kind === 'show' ? '#dc2626' : '#6b7280';
+        var gcal = e.source === 'google';
         return '<div style="background:rgba(0,0,0,.045);border:1px solid rgba(0,0,0,.05);border-radius:11px;' +
-               'padding:.7rem .8rem;margin-bottom:.6rem;">' +
+               'padding:.7rem .8rem;margin-bottom:.6rem;' +
+               (gcal ? 'border-left:3px solid #4285f4;' : '') + '">' +
                '<div style="font-size:.8rem;color:#6b7280;line-height:1.3;">' + esc(e.title || '(tanpa judul)') + '</div>' +
                (e.eventName ? '<div style="font-size:.66rem;color:#9ca3af;">' + esc(e.eventName) + '</div>' : '') +
                '<div style="font-size:.98rem;color:#111827;font-weight:700;margin-top:.1rem;">' + esc(when) + '</div>' +
-               (kind ? '<span style="display:inline-block;margin-top:.25rem;font-size:.6rem;font-weight:700;' +
-                       'text-transform:uppercase;color:' + col + ';border:1px solid ' + col + '33;border-radius:99px;' +
-                       'padding:.1rem .45rem;">' + esc(kind) + '</span>' : '') +
-               '</div>';
+               '<div style="display:flex;align-items:center;gap:.35rem;margin-top:.25rem;flex-wrap:wrap;">' +
+                 (kind ? '<span style="font-size:.6rem;font-weight:700;text-transform:uppercase;color:' + col + ';' +
+                         'border:1px solid ' + col + '33;border-radius:99px;padding:.1rem .45rem;">' + esc(kind) + '</span>' : '') +
+                 (gcal ? '<span style="font-size:.6rem;font-weight:700;color:#4285f4;">' +
+                         '<i class="fa-brands fa-google"></i> Calendar</span>' : '') +
+                 (e.guests ? '<span style="font-size:.6rem;color:#6b7280;">' + e.guests + ' peserta</span>' : '') +
+               '</div></div>';
     }
 
     function renderSchedList(box, d) {
@@ -524,10 +531,19 @@
             return;
         }
         var items = d.entries || [];
+        var nG = items.filter(function (x) { return x.source === 'google'; }).length;
         box.innerHTML =
             '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin-bottom:.55rem;">' +
               'JADWAL TERDEKAT</div>' +
-            (items.length ? items.slice(0, 6).map(schedRow).join('')
+            (d.signedIn
+              ? '<p style="font-size:.7rem;color:#4285f4;margin:-.2rem 0 .6rem;">' +
+                '<i class="fa-brands fa-google"></i> ' + nG + ' acara dari Google Calendar Anda ikut ditampilkan.</p>'
+              : (d.google && d.google.sso
+                  ? '<button data-gsignin style="width:100%;margin-bottom:.7rem;background:#fff;color:#3c4043;' +
+                    'border:1px solid #dadce0;border-radius:8px;padding:.5rem;font:600 .74rem system-ui;cursor:pointer;">' +
+                    '<i class="fa-brands fa-google" style="color:#4285f4;"></i> Masuk untuk melihat Google Calendar Anda</button>'
+                  : '')) +
+            (items.length ? items.slice(0, 8).map(schedRow).join('')
                           : '<p style="font-size:.78rem;color:#6b7280;margin:0;">Belum ada jadwal dalam 30 hari ke depan.</p>');
     }
 
@@ -571,7 +587,9 @@
     function loadSchedule() {
         var box = document.querySelector('[data-schedpanel]');
         if (!box) return Promise.resolve();
-        return fetch(API + '/schedule', { signal: AbortSignal.timeout(15000) })
+        var h = {};
+        if (state.gToken) h['x-google-token'] = state.gToken;
+        return fetch(API + '/schedule', { headers: h, signal: AbortSignal.timeout(15000) })
             .then(function (r) { return r.json().catch(function () { return {}; }); })
             .then(function (d) {
                 window.__reddieSchedule = d;
@@ -611,9 +629,15 @@
             var btn = e.target.closest('[data-gsignin]');
             btn.disabled = true; btn.textContent = 'Membuka Google…';
             var g = (window.__reddieSchedule || {}).google || {};
+            var label = btn.textContent;
             googleSignIn(g.clientId, g.scope, function (err) {
-                if (err) { btn.disabled = false; btn.innerHTML = '<i class="fa-brands fa-google"></i> Masuk dengan Google'; meetMsg(err.message, true); return; }
-                loadSchedule();
+                if (err) {
+                    btn.disabled = false;
+                    btn.innerHTML = '<i class="fa-brands fa-google" style="color:#4285f4;"></i> ' + esc(label.trim());
+                    meetMsg(err.message, true);
+                    return;
+                }
+                loadSchedule();     // muat ulang tab yang sedang terbuka
             });
             return;
         }
@@ -742,7 +766,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g6';
+        sc.src = 'style/editor.js?v=20260901-g7';
         document.body.appendChild(sc);
     }
 

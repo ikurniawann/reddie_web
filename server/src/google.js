@@ -108,3 +108,37 @@ export async function createCalendarEvent(m, providedToken) {
   if (!res.ok) throw new Error(d.error?.message || `Google menolak (HTTP ${res.status}).`);
   return { id: d.id, link: d.htmlLink, start: d.start?.dateTime };
 }
+
+/**
+ * Ambil acara dari kalender pengunjung.
+ * Scope calendar.events sudah mencakup baca-tulis acara, jadi tidak perlu
+ * meminta izin tambahan hanya untuk menampilkan daftarnya.
+ */
+export async function listCalendarEvents(token, { from, to, max = 20 } = {}) {
+  const params = new URLSearchParams({
+    timeMin: (from || new Date()).toISOString(),
+    timeMax: (to || new Date(Date.now() + 30 * 86400000)).toISOString(),
+    singleEvents: 'true',          // acara berulang dipecah jadi kejadian nyata
+    orderBy: 'startTime',
+    maxResults: String(Math.min(max, 50)),
+  });
+  const res = await fetch(
+    `https://www.googleapis.com/calendar/v3/calendars/primary/events?${params}`,
+    { headers: { authorization: 'Bearer ' + token }, signal: AbortSignal.timeout(15_000) });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(d.error?.message || `Google menolak (HTTP ${res.status}).`);
+
+  return (d.items || [])
+    .filter(e => e.status !== 'cancelled')
+    .map(e => ({
+      // Acara sehari-penuh memakai 'date', bukan 'dateTime'.
+      date: e.start?.dateTime || (e.start?.date ? e.start.date + 'T00:00:00Z' : null),
+      allDay: !e.start?.dateTime && !!e.start?.date,
+      title: e.summary || '(tanpa judul)',
+      kind: 'meeting',
+      source: 'google',
+      link: e.htmlLink || null,
+      guests: (e.attendees || []).length,
+    }))
+    .filter(e => e.date);
+}

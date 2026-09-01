@@ -12,7 +12,7 @@
 // ============================================================
 
 import { q } from './db.js';
-import { googleReady, createCalendarEvent, verifyAccessToken } from './google.js';
+import { googleReady, createCalendarEvent, verifyAccessToken, listCalendarEvents } from './google.js';
 
 export class TaskError extends Error {
   constructor(message, status = 502) { super(message); this.status = status; }
@@ -381,16 +381,27 @@ export async function runTaskTool(cfg, name, args, ctx = {}) {
 
 // ── Jadwal & meeting ───────────────────────────────────────
 
-/** Kalender internal sistem task: acara, tenggat, dan show day. */
-export async function listSchedule(cfg) {
-  const d = await call(cfg, '/calendar');
-  const entries = d?.data?.entries || d?.entries || [];
-  const items = Array.isArray(entries) ? entries : [];
-  return items
-    .map(e => ({
-      date: e.date, title: e.title || '', kind: e.kind || '',
-      eventId: e.eventId || null, eventName: e.eventName || null,
-    }))
+/**
+ * Jadwal gabungan: kalender internal sistem task (acara, tenggat, show day)
+ * ditambah acara Google milik pengunjung bila ia sudah masuk.
+ */
+export async function listSchedule(cfg, googleToken) {
+  const internalP = call(cfg, '/calendar')
+    .then(d => {
+      const entries = d?.data?.entries || d?.entries || [];
+      return (Array.isArray(entries) ? entries : []).map(e => ({
+        date: e.date, title: e.title || '', kind: e.kind || '',
+        eventId: e.eventId || null, eventName: e.eventName || null, source: 'internal',
+      }));
+    })
+    .catch(() => []);   // kalender internal bermasalah tidak boleh menghapus acara Google
+
+  const googleP = googleToken
+    ? listCalendarEvents(googleToken).catch(() => [])
+    : Promise.resolve([]);
+
+  const [internal, google] = await Promise.all([internalP, googleP]);
+  return [...internal, ...google]
     .filter(e => e.date)
     .sort((a, b) => new Date(a.date) - new Date(b.date));
 }

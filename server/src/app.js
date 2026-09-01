@@ -271,10 +271,11 @@ export function buildApp() {
 
   // ═══════════════ SCHEDULE & MEETING ═══════════════
 
-  app.get('/api/schedule', taskGuard(async (cfg, _req, res) => {
-    const entries = await listSchedule(cfg);
+  app.get('/api/schedule', taskGuard(async (cfg, req, res) => {
+    const gTok = String(req.headers['x-google-token'] || '') || undefined;
+    const entries = await listSchedule(cfg, gTok);
     res.set('cache-control', 'no-store');
-    res.json({ configured: true, entries, google: googleStatus(cfg.googleClientId) });
+    res.json({ configured: true, entries, signedIn: !!gTok, google: googleStatus(cfg.googleClientId) });
   }));
 
   app.post('/api/meetings', taskGuard(async (cfg, req, res) => {
