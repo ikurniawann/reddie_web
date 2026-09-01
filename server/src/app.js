@@ -120,7 +120,7 @@ export function buildApp() {
         [aRow.slug, mRow.model_id, ip, String(req.headers['user-agent'] || '').slice(0, 300)])).rows[0].id;
     }
 
-    const intgCfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+    const intgCfg = (await q(`SELECT value FROM settings WHERE key='chatlimit'`)).rows[0]?.value || {};
     // Batas diatur lewat CMS agar bisa disesuaikan tanpa deploy; nilai di
     // env dipakai hanya bila pengaturannya belum pernah diisi. 0 = tanpa batas.
     const batas = intgCfg.chat_limit === 0 ? 0
@@ -531,7 +531,7 @@ export function buildApp() {
     const sessionId = /^[0-9a-f-]{36}$/i.test(String(req.body?.sessionId || ''))
       ? String(req.body.sessionId) : null;
 
-    const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+    const cfg = (await q(`SELECT value FROM settings WHERE key='chatlimit'`)).rows[0]?.value || {};
 
     // Satu email per sesi sudah cukup; menekan tombol dua kali tidak boleh
     // menghasilkan dua baris di dasbor.

@@ -28,6 +28,7 @@ export const GROUPS = {
   socials: 'Tautan sosial',
   contact: 'Formulir kontak',
   login:   'Jendela masuk',
+  chatlimit:    'Batas percakapan',
   integrations: 'Integrasi & otomasi',
 };
 
@@ -140,6 +141,27 @@ export const FIELDS = {
   'login.footer_text':    { label: 'Ajakan daftar',         type: 'text', max: 40, help: 'Kalimat di bagian paling bawah jendela masuk.', value: "Don't have an account?" },
   'login.signup':         { label: 'Tautan daftar',         type: 'text', max: 20, value: 'Sign up' },
 
+  // ── Batas percakapan ────────────────────────────────────
+  'chatlimit.chat_limit': {
+    label: 'Batas pesan per sesi chat', type: 'int',
+    help: 'Berapa pesan yang boleh dikirim pengunjung dalam satu sesi sebelum diminta berlangganan. Isi 0 untuk tanpa batas (keadaan sekarang).',
+    value: 0,
+  },
+  'chatlimit.chat_limit_ip': {
+    label: 'Batas pesan per jaringan (24 jam)', type: 'int',
+    help: 'Penahan agar batas per sesi tidak bisa dilewati sekadar dengan menyegarkan halaman atau membuka tab baru. Dihitung dari alamat IP — dan karena satu kantor biasanya berbagi satu IP, angkanya perlu beberapa kali lipat batas per sesi. Isi 0 untuk mematikan (keadaan sekarang). Saran bila dinyalakan: sekitar empat kali batas per sesi.',
+    value: 0,
+  },
+  'chatlimit.chat_limit_message': {
+    label: 'Ajakan berlangganan', type: 'textarea', max: 400,
+    help: 'Muncul di chat saat batas pesan tercapai, tepat di atas kolom isian email.',
+    value: 'Sesi demo ini sudah mencapai batas percakapan. Kalau Anda tertarik dengan Reddie, tinggalkan email — kami kabari saat fiturnya siap dipakai penuh.',
+  },
+  'chatlimit.chat_thanks_message': {
+    label: 'Balasan setelah berlangganan', type: 'textarea', max: 300,
+    help: 'Dikirim sebagai balasan chat setelah pengunjung memasukkan emailnya.',
+    value: 'Terima kasih! Email Anda sudah kami catat. Tim WIT.ID akan menghubungi Anda begitu Reddie siap dipakai penuh.',
+  },
   // ── Integrasi ───────────────────────────────────────────
   'integrations.webhook_url': {
     label: 'Alamat webhook otomasi', type: 'url', max: 300, private: true,
@@ -160,26 +182,6 @@ export const FIELDS = {
     label: 'Google OAuth Client ID', type: 'text', max: 200,
     help: 'Client ID dari Google Cloud Console. Boleh terlihat publik — memang dirancang begitu. Diisi supaya pengunjung bisa masuk dengan akun Google sendiri dan meeting masuk ke kalendernya sendiri. Kosongkan untuk mematikan tombol masuk Google.',
     value: '',
-  },
-  'integrations.chat_limit': {
-    label: 'Batas pesan per sesi chat', type: 'int',
-    help: 'Berapa pesan yang boleh dikirim pengunjung dalam satu sesi sebelum diminta berlangganan. Isi 0 untuk tanpa batas.',
-    value: 10,
-  },
-  'integrations.chat_limit_ip': {
-    label: 'Batas pesan per jaringan (24 jam)', type: 'int',
-    help: 'Penahan agar batas per sesi tidak bisa dilewati sekadar dengan menyegarkan halaman atau membuka tab baru. Dihitung dari alamat IP — dan karena satu kantor biasanya berbagi satu IP, angkanya perlu beberapa kali lipat batas per sesi. Isi 0 untuk mematikan.',
-    value: 40,
-  },
-  'integrations.chat_limit_message': {
-    label: 'Ajakan berlangganan', type: 'textarea', max: 400,
-    help: 'Muncul di chat saat batas pesan tercapai, tepat di atas kolom isian email.',
-    value: 'Sesi demo ini sudah mencapai batas percakapan. Kalau Anda tertarik dengan Reddie, tinggalkan email — kami kabari saat fiturnya siap dipakai penuh.',
-  },
-  'integrations.chat_thanks_message': {
-    label: 'Balasan setelah berlangganan', type: 'textarea', max: 300,
-    help: 'Dikirim sebagai balasan chat setelah pengunjung memasukkan emailnya.',
-    value: 'Terima kasih! Email Anda sudah kami catat. Tim WIT.ID akan menghubungi Anda begitu Reddie siap dipakai penuh.',
   },
   'integrations.crypto_limit': {
     label: 'Jumlah koin ditampilkan', type: 'int',
