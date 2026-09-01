@@ -161,6 +161,21 @@ export const FIELDS = {
     help: 'Client ID dari Google Cloud Console. Boleh terlihat publik — memang dirancang begitu. Diisi supaya pengunjung bisa masuk dengan akun Google sendiri dan meeting masuk ke kalendernya sendiri. Kosongkan untuk mematikan tombol masuk Google.',
     value: '',
   },
+  'integrations.chat_limit': {
+    label: 'Batas pesan per sesi chat', type: 'int',
+    help: 'Berapa pesan yang boleh dikirim pengunjung dalam satu sesi sebelum diminta berlangganan. Isi 0 untuk tanpa batas.',
+    value: 10,
+  },
+  'integrations.chat_limit_message': {
+    label: 'Ajakan berlangganan', type: 'textarea', max: 400,
+    help: 'Muncul di chat saat batas pesan tercapai, tepat di atas kolom isian email.',
+    value: 'Sesi demo ini sudah mencapai batas percakapan. Kalau Anda tertarik dengan Reddie, tinggalkan email — kami kabari saat fiturnya siap dipakai penuh.',
+  },
+  'integrations.chat_thanks_message': {
+    label: 'Balasan setelah berlangganan', type: 'textarea', max: 300,
+    help: 'Dikirim sebagai balasan chat setelah pengunjung memasukkan emailnya.',
+    value: 'Terima kasih! Email Anda sudah kami catat. Tim WIT.ID akan menghubungi Anda begitu Reddie siap dipakai penuh.',
+  },
   'integrations.crypto_limit': {
     label: 'Jumlah koin ditampilkan', type: 'int',
     help: 'Berapa kripto trending yang tampil di panel Investment. Maksimal 15.',

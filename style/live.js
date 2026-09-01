@@ -53,6 +53,11 @@
                     // supaya angka dan daftarnya tidak bertentangan dengan
                     // apa yang barusan dikatakan agent di chat.
                     if (d.tasksChanged) refreshTaskPanel();
+                    // Batas sesi tercapai: tawarkan berlangganan setelah
+                    // balasannya selesai dirender oleh script.js.
+                    if (d.limitReached && !d.subscribed) {
+                        setTimeout(showSubscribeCard, 400);
+                    }
                     return d;
                 });
             });
@@ -66,6 +71,78 @@
             }).catch(function () {});
         },
     };
+
+    // ── Kartu langganan saat batas sesi tercapai ─────────────────────
+    // Memakai kelas .launch-* yang gayanya sudah ada di style.css, tapi
+    // pengirimannya nyata: email masuk ke dasbor, bukan sekadar berganti
+    // tampilan seperti kartu mock bawaan.
+    function showSubscribeCard() {
+        var conv = document.getElementById('chatConversation');
+        if (!conv || document.getElementById('reddieSubscribeCard')) return;
+
+        var card = document.createElement('div');
+        card.id = 'reddieSubscribeCard';
+        card.className = 'msg-row agent-row';
+        card.innerHTML =
+            '<div class="launch-signup-card">' +
+              '<div class="launch-card-header">' +
+                '<span class="launch-card-icon">&#x2709;&#xFE0F;</span>' +
+                '<div><div class="launch-card-title">Tetap terhubung</div>' +
+                '<div class="launch-card-sub">Masukkan email Anda, kami kabari perkembangannya.</div></div>' +
+              '</div>' +
+              '<div class="launch-card-body" id="reddieSubBody">' +
+                '<form class="launch-email-form" id="reddieSubForm" autocomplete="off">' +
+                  '<input type="email" id="reddieSubEmail" class="launch-email-input" ' +
+                    'placeholder="nama@perusahaan.com" required>' +
+                  '<button type="submit" class="launch-submit-btn">Kirim <i class="fa-solid fa-arrow-right"></i></button>' +
+                '</form>' +
+                '<div class="launch-card-note" id="reddieSubNote">Tanpa spam. Hanya kabar penting.</div>' +
+              '</div>' +
+            '</div>';
+        conv.appendChild(card);
+        if (window.scrollToBottom) window.scrollToBottom(); else conv.scrollTop = conv.scrollHeight;
+
+        card.querySelector('#reddieSubForm').addEventListener('submit', function (e) {
+            e.preventDefault();
+            var input = card.querySelector('#reddieSubEmail');
+            var note = card.querySelector('#reddieSubNote');
+            var btn = card.querySelector('.launch-submit-btn');
+            var email = (input.value || '').trim();
+            if (!email) return;
+
+            btn.disabled = true;
+            note.textContent = 'Mengirim…';
+            note.style.color = '';
+
+            fetch(API + '/subscribe', {
+                method: 'POST',
+                headers: { 'content-type': 'application/json' },
+                body: JSON.stringify({ email: email, sessionId: state.sessionId }),
+            }).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (d) {
+                    if (!r.ok) throw new Error(d.error || 'Gagal mengirim.');
+                    return d;
+                });
+            }).then(function (d) {
+                card.querySelector('#reddieSubBody').innerHTML =
+                    '<div class="launch-success">' +
+                      '<i class="fa-solid fa-circle-check" style="color:#22c55e;font-size:1.4rem;"></i>' +
+                      '<div><div class="launch-success-title">Email tersimpan</div>' +
+                      '<div class="launch-success-sub">' + esc(email) + '</div></div>' +
+                    '</div>';
+                // Balasan terima kasih datang dari server, jadi teksnya bisa
+                // diubah lewat CMS tanpa menyentuh kode.
+                if (window.appendMessage) {
+                    window.appendMessage(d.reply || 'Terima kasih!', 'agent');
+                    if (window.scrollToBottom) window.scrollToBottom();
+                }
+            }).catch(function (err) {
+                btn.disabled = false;
+                note.textContent = err.message;
+                note.style.color = '#b91c1c';
+            });
+        });
+    }
 
     // ── Hidrasi konten dari CMS ──────────────────────────────────────
     // Kontrak: HTML menyatakan kunci kontennya sendiri lewat data-cms,
@@ -962,7 +1039,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h5';
+        sc.src = 'style/editor.js?v=20260901-h6';
         document.body.appendChild(sc);
     }
 

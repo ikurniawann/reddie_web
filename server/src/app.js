@@ -120,10 +120,27 @@ export function buildApp() {
         [aRow.slug, mRow.model_id, ip, String(req.headers['user-agent'] || '').slice(0, 300)])).rows[0].id;
     }
 
+    const intgCfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+    // Batas diatur lewat CMS agar bisa disesuaikan tanpa deploy; nilai di
+    // env dipakai hanya bila pengaturannya belum pernah diisi. 0 = tanpa batas.
+    const batas = intgCfg.chat_limit === 0 ? 0
+                : (Number(intgCfg.chat_limit) || CHAT_MAX_PER_SESSION);
+
     const { rows: [{ n }] } = await q(
       `SELECT count(*)::int AS n FROM chat_messages WHERE session_id=$1 AND role='user'`, [sid]);
-    if (n >= CHAT_MAX_PER_SESSION) {
-      return res.status(429).json({ error: `Batas demo ${CHAT_MAX_PER_SESSION} pesan per sesi tercapai.`, sessionId: sid });
+    if (batas > 0 && n >= batas) {
+      // Sengaja 200, bukan 429: ini bukan kegagalan melainkan akhir sesi demo
+      // yang direncanakan, dan klien perlu menampilkan formulir langganan
+      // alih-alih pesan galat merah.
+      const sudah = (await q(
+        `SELECT 1 FROM leads WHERE source='chat' AND meta->>'session_id' = $1 LIMIT 1`, [sid])).rowCount > 0;
+      return res.json({
+        sessionId: sid,
+        reply: String(intgCfg.chat_limit_message ||
+          'Sesi demo ini sudah mencapai batas percakapan.'),
+        limitReached: true,
+        subscribed: sudah,      // sudah berlangganan -> formulir tidak ditampilkan lagi
+      });
     }
 
     await q(`INSERT INTO chat_messages (session_id, role, content) VALUES ($1,'user',$2)`, [sid, message]);
@@ -479,6 +496,41 @@ export function buildApp() {
 
     res.json({ ticket: lead.id, ...info, webhook: hook.status, webhook_reason: hook.reason || null });
   }));
+
+  // Langganan dari chat saat batas sesi tercapai.
+  app.post('/api/subscribe', async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+
+    const email = String(req.body?.email || '').trim().slice(0, 200);
+    if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+      return res.status(400).json({ error: 'Alamat email tidak valid.' });
+    }
+    const sessionId = /^[0-9a-f-]{36}$/i.test(String(req.body?.sessionId || ''))
+      ? String(req.body.sessionId) : null;
+
+    const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+
+    // Satu email per sesi sudah cukup; menekan tombol dua kali tidak boleh
+    // menghasilkan dua baris di dasbor.
+    if (sessionId) {
+      const ada = await q(
+        `SELECT 1 FROM leads WHERE source='chat' AND meta->>'session_id' = $1 LIMIT 1`, [sessionId]);
+      if (ada.rowCount) {
+        return res.json({ ok: true, duplicate: true,
+          reply: String(cfg.chat_thanks_message || 'Terima kasih! Email Anda sudah tercatat.') });
+      }
+    }
+
+    await q(
+      `INSERT INTO leads (name, email, message, source, meta) VALUES (NULL,$1,$2,'chat',$3)`,
+      [email, 'Berlangganan dari chat demo', JSON.stringify({
+        session_id: sessionId, ip, ua: String(req.headers['user-agent'] || '').slice(0, 300),
+      })]);
+
+    res.status(201).json({ ok: true,
+      reply: String(cfg.chat_thanks_message || 'Terima kasih! Email Anda sudah kami catat.') });
+  });
 
   // Lead capture: form contact, login modal, dsb.
   app.post('/api/leads', async (req, res) => {
