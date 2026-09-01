@@ -1,4 +1,5 @@
 import express from 'express';
+import { createHash } from 'node:crypto';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import jwt from 'jsonwebtoken';
@@ -24,6 +25,18 @@ const CHAT_MAX_PER_SESSION = Number(process.env.CHAT_MAX_PER_SESSION || 20);
 const CHAT_MAX_PER_IP_HOUR = Number(process.env.CHAT_MAX_PER_IP_HOUR || 60);
 const CHAT_MAX_TOKENS      = Number(process.env.CHAT_MAX_TOKENS || 1024);
 const JWT_SECRET = process.env.JWT_SECRET;
+
+// Alias buram untuk model. Cukup stabil (turunan nama model) dan cukup
+// tidak informatif — pengunjung melihat "m_7f3a", bukan "deepseek-chat".
+function modelAlias(modelId) {
+  return 'm_' + createHash('sha256').update('reddie:' + modelId).digest('hex').slice(0, 8);
+}
+
+async function aliasToModel(alias) {
+  const rows = (await q('SELECT model_id FROM ai_models WHERE enabled')).rows;
+  const hit = rows.find(r => modelAlias(r.model_id) === alias);
+  return hit ? hit.model_id : null;
+}
 
 export function buildApp() {
   if (!JWT_SECRET) throw new Error('JWT_SECRET wajib diisi');
@@ -80,9 +93,13 @@ export function buildApp() {
     const content = draftOk ? raw : { ...raw, settings: stripPrivate(raw.settings) };
     // Model dihitung langsung, tidak ikut dipotret: kesiapan provider
     // bergantung API key di environment, bukan pada isi konten.
+    // Nama provider dan model_id TIDAK dikirim ke publik. Yang keluar hanya
+    // label dan alias buram; pemetaan alias -> model asli dilakukan server.
+    // Tanpa ini, siapa pun bisa membaca dari devtools mesin apa yang dipakai.
     const models = (await q(
       'SELECT provider, model_id, label, is_default FROM ai_models WHERE enabled ORDER BY sort, id'
-    )).rows.filter(m => providerReady(m.provider));
+    )).rows.filter(m => providerReady(m.provider))
+      .map(m => ({ id: modelAlias(m.model_id), label: m.label, is_default: m.is_default }));
 
     res.set('cache-control', draftOk ? 'no-store' : 'public, max-age=60');
     res.json({ ...content, models, draft: draftOk });
@@ -97,10 +114,13 @@ export function buildApp() {
     if (typeof message !== 'string' || !message.trim()) return res.status(400).json({ error: 'message wajib diisi' });
     if (message.length > 2000) return res.status(400).json({ error: 'Pesan terlalu panjang (maks 2000 karakter)' });
 
-    // Model: pilihan klien harus terdaftar & aktif; selain itu pakai default
+    // Klien mengirim alias, bukan model_id. Diterjemahkan di sini; alias
+    // yang tidak dikenal diperlakukan sebagai "tidak memilih" lalu jatuh ke
+    // model bawaan, bukan ditolak.
+    const pilihan = model ? await aliasToModel(String(model)) : null;
     const mRow = (await q(
       `SELECT provider, model_id FROM ai_models WHERE enabled AND ($1::text IS NULL OR model_id=$1)
-       ORDER BY (model_id=$1) DESC, is_default DESC, sort LIMIT 1`, [model || null])).rows[0];
+       ORDER BY (model_id=$1) DESC, is_default DESC, sort LIMIT 1`, [pilihan])).rows[0];
     if (!mRow) return res.status(503).json({ error: 'Tidak ada model AI yang aktif' });
     if (!providerReady(mRow.provider)) return res.status(503).json({ error: `Provider ${mRow.provider} belum dikonfigurasi` });
 
@@ -281,7 +301,9 @@ export function buildApp() {
       }
       const reply = text || '(jawaban kosong)';
       await q(`INSERT INTO chat_messages (session_id, role, content) VALUES ($1,'assistant',$2)`, [sid, reply]);
-      res.json({ sessionId: sid, reply, model: mRow.model_id, agent: aRow.slug, tasksChanged });
+      // Alias, bukan model_id: balasan chat pun tidak boleh membocorkan
+      // mesin yang dipakai.
+      res.json({ sessionId: sid, reply, model: modelAlias(mRow.model_id), agent: aRow.slug, tasksChanged });
     } catch (e) {
       const status = e instanceof ProviderError ? e.status : 502;
       console.error('[chat]', e.message);

@@ -257,19 +257,21 @@
         if ((d.models || []).length) {
             state.models = d.models;
             var def = d.models.filter(function (m) { return m.is_default; })[0] || d.models[0];
-            window.__reddieModelId = def.model_id;
+            window.__reddieModelId = def.id;
             var panel = document.getElementById('modelPanel');
             if (panel) {
-                var colors = { anthropic: '#ff3333', openai: '#10a37f', deepseek: '#4d6bfe', custom: '#7c3aed', echo: '#6b7280' };
+                // Warna per-model, bukan per-provider: nama provider memang
+                // sudah tidak dikirim server, dan tidak perlu bocor lewat CSS.
+                var palet = ['#ff3333', '#7c3aed', '#0284c7', '#16a34a', '#ca8a04'];
                 panel.innerHTML =
                     '<div class="toolbar-panel-header">Select Model <span class="panel-close-btn" data-panel="modelPanel">&#x2715;</span></div>' +
-                    d.models.map(function (m) {
-                        var col = colors[m.provider] || '#ff3333';
-                        return '<div class="model-option' + (m.model_id === def.model_id ? ' selected' : '') + '" data-model="' + esc(m.label) + '" data-model-id="' + esc(m.model_id) + '" data-color="' + col + '">' +
+                    d.models.map(function (m, i) {
+                        var col = palet[i % palet.length];
+                        return '<div class="model-option' + (m.id === def.id ? ' selected' : '') + '" data-model="' + esc(m.label) + '" data-model-id="' + esc(m.id) + '" data-color="' + col + '">' +
                             '<div class="model-icon" style="background:' + col + '1f;color:' + col + ';">&#x25C6;</div>' +
                             '<div class="model-info"><div class="model-name">' + esc(m.label) +
                             (m.is_default ? ' <span class="model-badge badge-active">Default</span>' : '') +
-                            '</div><div class="model-desc">' + esc(m.provider) + ' · ' + esc(m.model_id) + '</div></div>' +
+                            '</div><div class="model-desc">Mesin Reddie</div></div>' +
                             '<i class="fa-solid fa-circle-check model-check"></i></div>';
                     }).join('');
             }
@@ -820,6 +822,73 @@
         '</svg>';
     }
 
+    // Versi besar untuk area chat. Kanvasnya jauh lebih lapang daripada
+    // kolom tengah, jadi label lengkap, keterangan, dan waktu ping muat —
+    // dan itu yang membuat diagramnya terasa hidup, bukan dekoratif.
+    function petaBesar(conns) {
+        var W = 640, H = 380, cx = W / 2, cy = H / 2, R = 132;
+        var n = conns.length || 1;
+        var titik = conns.map(function (c, i) {
+            var a = (Math.PI * 2 * i) / n - Math.PI / 2;
+            return { c: c, x: cx + Math.cos(a) * R * 1.5, y: cy + Math.sin(a) * R, a: a };
+        });
+
+        var garis = titik.map(function (t) {
+            var hidup = t.c.up, sebagian = t.c.partial;
+            var warna = hidup ? '#16a34a' : sebagian ? '#ca8a04' : '#cbd5e1';
+            return '<line x1="' + cx + '" y1="' + cy + '" x2="' + t.x.toFixed(1) + '" y2="' + t.y.toFixed(1) + '" ' +
+                   'stroke="' + warna + '" stroke-width="' + (hidup ? 2 : 1.2) + '" ' +
+                   'stroke-dasharray="' + (hidup ? '5 5' : '2 5') + '" opacity="' + (hidup ? 0.85 : 0.4) + '">' +
+                   (hidup ? '<animate attributeName="stroke-dashoffset" from="20" to="0" dur="1.2s" repeatCount="indefinite"/>' : '') +
+                   '</line>';
+        }).join('');
+
+        var simpul = titik.map(function (t) {
+            var hidup = t.c.up, sebagian = t.c.partial;
+            var warna = hidup ? '#16a34a' : sebagian ? '#ca8a04' : '#94a3b8';
+            var kanan = t.x > cx;
+            var tx = t.x + (kanan ? 20 : -20);
+            var anchor = kanan ? 'start' : 'end';
+            return '<g>' +
+              (hidup ? '<circle cx="' + t.x.toFixed(1) + '" cy="' + t.y.toFixed(1) + '" r="10" fill="none" stroke="' + warna + '" stroke-width="2" opacity="0.45">' +
+                       '<animate attributeName="r" from="10" to="22" dur="2s" repeatCount="indefinite"/>' +
+                       '<animate attributeName="opacity" from="0.45" to="0" dur="2s" repeatCount="indefinite"/></circle>' : '') +
+              '<circle cx="' + t.x.toFixed(1) + '" cy="' + t.y.toFixed(1) + '" r="10" fill="#fff" stroke="' + warna + '" stroke-width="2.5"/>' +
+              '<text x="' + tx.toFixed(1) + '" y="' + (t.y - 2).toFixed(1) + '" text-anchor="' + anchor + '" ' +
+                'font-size="12.5" font-weight="800" fill="#1f2937">' + esc(t.c.label) + '</text>' +
+              '<text x="' + tx.toFixed(1) + '" y="' + (t.y + 12).toFixed(1) + '" text-anchor="' + anchor + '" ' +
+                'font-size="10" fill="#6b7280">' + esc(t.c.detail || '') +
+                (t.c.ms ? ' · ' + t.c.ms + 'ms' : '') + '</text>' +
+            '</g>';
+        }).join('');
+
+        return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+          garis + simpul +
+          '<circle cx="' + cx + '" cy="' + cy + '" r="38" fill="#ff3333" opacity="0.15">' +
+            '<animate attributeName="r" from="38" to="52" dur="2.4s" repeatCount="indefinite"/>' +
+            '<animate attributeName="opacity" from="0.15" to="0" dur="2.4s" repeatCount="indefinite"/></circle>' +
+          '<circle cx="' + cx + '" cy="' + cy + '" r="34" fill="#ff3333"/>' +
+          '<text x="' + cx + '" y="' + (cy + 5) + '" text-anchor="middle" font-size="14" font-weight="800" fill="#fff">REDDIE</text>' +
+        '</svg>';
+    }
+
+    function tampilGrafikChat(conns) {
+        var box = document.querySelector('[data-chatvisual]');
+        if (!box) return;
+        if (!conns || !conns.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        var aktif = conns.filter(function (c) { return c.up; }).length;
+        box.style.display = 'block';
+        box.innerHTML = petaBesar(conns) +
+            '<p style="font-size:.72rem;color:#6b7280;text-align:center;margin:.2rem 0 0;">' +
+              aktif + ' dari ' + conns.length + ' sistem aktif · diperiksa langsung saat panel dibuka</p>';
+    }
+
+    function sembunyikanGrafikChat() {
+        var box = document.querySelector('[data-chatvisual]');
+        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+    }
+    window.REDDIE_HIDE_GRAPH = sembunyikanGrafikChat;
+
     function connRow(c) {
         var warna = c.up ? '#16a34a' : c.partial ? '#ca8a04' : '#9ca3af';
         var label = c.up ? 'aktif' : c.partial ? 'siap' : 'mati';
@@ -866,6 +935,7 @@
                 }
                 var conns = d.connections || [], wfs = d.workflows || [];
                 var aktif = conns.filter(function (c) { return c.up; }).length;
+                tampilGrafikChat(conns);      // versi besar di area chat
                 box.innerHTML =
                     petaSVG(conns) +
                     '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
@@ -1173,7 +1243,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h7';
+        sc.src = 'style/editor.js?v=20260901-h8';
         document.body.appendChild(sc);
     }
 

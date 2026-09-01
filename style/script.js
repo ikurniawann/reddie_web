@@ -1026,7 +1026,8 @@ function setupDashboardDemo() {
         if (tabName === 'Task & Scheduling' && window.REDDIE_SCHEDULE) window.REDDIE_SCHEDULE();
         if (tabName === 'Research' && window.REDDIE_NEWS) window.REDDIE_NEWS();
         if (tabName === 'Analyze' && window.REDDIE_CRYPTO) window.REDDIE_CRYPTO();
-        if (tabName === 'Automation' && window.REDDIE_AUTOMATION) window.REDDIE_AUTOMATION();
+        if (tabName === 'Automation') { if (window.REDDIE_AUTOMATION) window.REDDIE_AUTOMATION(); }
+        else if (window.REDDIE_HIDE_GRAPH) window.REDDIE_HIDE_GRAPH();
     }
     
     function getAgentMockResponse(query, turnNum) {

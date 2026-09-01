@@ -55,7 +55,7 @@ export async function checkConnections({ googleSignedIn = false } = {}) {
 
   return [
     {
-      id: 'ai', label: 'Mesin AI', detail: 'DeepSeek',
+      id: 'ai', label: 'Mesin AI', detail: 'Reddie Core',
       up: providerReady('deepseek') || providerReady('anthropic') || providerReady('openai'),
       note: 'Menjawab, meringkas, dan memanggil tool',
     },
