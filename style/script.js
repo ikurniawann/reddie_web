@@ -831,123 +831,29 @@ function setupDashboardDemo() {
             case "Connectivity":
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Apps</span>
-                        <span class="stats-tab">API Webhooks</span>
-                    </div>
-                    <div class="stats-scroll-content">
-                        <div class="billing-card">
-                            <div class="billing-header">
-                                <h3>Integrations & APIs</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-link"></i></span>
-                            </div>
-                            <div>
-                                <div class="section-label">CONNECTED APPS</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card"><span class="dist-type"><i class="fa-brands fa-slack" style="color: #4a154b; margin-right: 4px;"></i> Slack</span><span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700;">Linked</span></div>
-                                    <div class="dist-card"><span class="dist-type"><i class="fa-brands fa-shopify" style="color: #96bf48; margin-right: 4px;"></i> Shopify</span><span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700;">Linked</span></div>
-                                    <div class="dist-card"><span class="dist-type"><i class="fa-brands fa-salesforce" style="color: #00a1e0; margin-right: 4px;"></i> Salesforce</span><span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700;">Linked</span></div>
-                                    <div class="dist-card"><span class="dist-type"><i class="fa-regular fa-envelope" style="color: #ea4335; margin-right: 4px;"></i> Gmail API</span><span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700;">Linked</span></div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="section-label">API LIMITS</div>
-                                <div class="progress-bars-grid" style="grid-template-columns: 1fr; padding: 0.8rem 1rem;">
-                                    <div style="font-size: 0.75rem; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                        <span>Webhook Hits (12k / 100k)</span>
-                                        <span>12%</span>
-                                    </div>
-                                    <div class="bar-container" style="width: 100%; height: 8px;">
-                                        <div class="bar bar-progress" style="width: 12%; height: 100%; bottom: auto; left: 0;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn-escalate">Generate API Token</button>
-                        </div>
-                    </div>
-                `;
-                welcomeTitleText = "Integration Console";
-                welcomeSubtitleText = "Connect Reddie to Slack, Shopify, Gmail, and custom webhooks.";
-                chipsHTML = `
-                    <button class="chip">Link Slack workspace</button>
-                    <button class="chip">Integrate Shopify store</button>
-                    <button class="chip">Set custom Webhook</button>
-                    <button class="chip">Check Salesforce sync status</button>
-                `;
-                break;
-                
-            case "Chat & Discussion":
-            default:
-                statsHTML = `
-                    <div class="stats-tabs">
-                        <span class="stats-tab active">AI Skills Sockets</span>
+                        <span class="stats-tab active" data-cms="console.agentic_tab">Agentic</span>
                         <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card" style="gap: 1rem;">
-                            <div class="billing-header">
-                                <h3>Active Sockets</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-wand-magic-sparkles" style="color: #ff3333;"></i></span>
-                            </div>
-                            
-                            <p style="font-size: 0.8rem; color: #4b5563; margin-top: -0.8rem; margin-bottom: 0.4rem; line-height: 1.45;">
-                                Select an active socket below to execute custom data transformations directly on the active discussion.
-                            </p>
-
-                            <div style="display: flex; flex-direction: column; gap: 1rem;" data-cms-skills>
-                                <!-- Skill 1: Generate PDF -->
-                                <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span style="width: 32px; height: 32px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: #ef4444;"><i class="fa-solid fa-file-pdf" style="font-size: 1.1rem;"></i></span>
-                                        <div>
-                                            <h4 style="margin: 0; font-size: 0.85rem; color: #111827; font-weight: 700;">Document Generator</h4>
-                                            <span style="font-size: 0.68rem; color: #6b7280; font-weight: 500;">Exports discussion to PDF</span>
-                                        </div>
-                                    </div>
-                                    <p style="margin: 0; font-size: 0.75rem; color: #4b5563; line-height: 1.4;">Compile active chat session logs and metadata context into a styled PDF summary.</p>
-                                    <button class="btn-escalate btn-skill-pdf" style="background: #ef4444; color: white; border: none; font-weight: 700; width: 100%; padding: 0.55rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.78rem;"><i class="fa-solid fa-file-pdf"></i> Generate PDF Report</button>
-                                </div>
-
-                                <!-- Skill 2: Generate Excel -->
-                                <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 124, 65, 0.1); display: flex; align-items: center; justify-content: center; color: #107c41;"><i class="fa-solid fa-file-excel" style="font-size: 1.1rem;"></i></span>
-                                        <div>
-                                            <h4 style="margin: 0; font-size: 0.85rem; color: #111827; font-weight: 700;">Spreadsheet Compiler</h4>
-                                            <span style="font-size: 0.68rem; color: #6b7280; font-weight: 500;">Exports variables to Excel</span>
-                                        </div>
-                                    </div>
-                                    <p style="margin: 0; font-size: 0.75rem; color: #4b5563; line-height: 1.4;">Parse conversation values, timelines, and ticket properties into a clean spreadsheet.</p>
-                                    <button class="btn-escalate btn-skill-excel" style="background: #107c41; color: white; border: none; font-weight: 700; width: 100%; padding: 0.55rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.78rem;"><i class="fa-solid fa-file-excel"></i> Export to Excel</button>
-                                </div>
-
-                                <!-- Skill 3: Sync Server -->
-                                <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
-                                    <div style="display: flex; align-items: center; gap: 8px;">
-                                        <span style="width: 32px; height: 32px; border-radius: 8px; background: rgba(2, 132, 199, 0.1); display: flex; align-items: center; justify-content: center; color: #0284c7;"><i class="fa-solid fa-database" style="font-size: 1.1rem;"></i></span>
-                                        <div>
-                                            <h4 style="margin: 0; font-size: 0.85rem; color: #111827; font-weight: 700;">Database Sync</h4>
-                                            <span style="font-size: 0.68rem; color: #6b7280; font-weight: 500;">Syncs to server cluster</span>
-                                        </div>
-                                    </div>
-                                    <p style="margin: 0; font-size: 0.75rem; color: #4b5563; line-height: 1.4;">Commit active ticket parameters and resolved variables into your server sockets.</p>
-                                    <button class="btn-escalate btn-skill-sync" style="background: #0284c7; color: white; border: none; font-weight: 700; width: 100%; padding: 0.55rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.78rem;"><i class="fa-solid fa-arrows-rotate"></i> Sync Server Sockets</button>
-                                </div>
-                            </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
+                                data-cms="console.agentic_title">Agentic Control</h3>
+                            <i class="fa-solid fa-tower-broadcast" style="font-size:1.05rem;color:#374151;"></i>
+                        </div>
+                        <div data-agenticpanel>
+                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Menyiapkan…</p>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "Welcome, Mr. Stark!";
-                welcomeSubtitleText = "How can I help you today?";
+                welcomeTitleText = "Agentic Control";
+                welcomeSubtitleText = "Izinkan Reddie mengendalikan tampilan ini, dan lihat ia bekerja sendiri.";
                 chipsHTML = `
-                    <button class="chip">Suggest reply</button>
-                    <button class="chip">Summarize</button>
-                    <button class="chip">Extract key details</button>
-                    <button class="chip">Detect sentiment</button>
-                    <button class="chip">Search knowledge base</button>
-                    <button class="chip">Rephrase professionally</button>
+                    <button class="chip">Apa yang bisa dikendalikan?</button>
+                    <button class="chip">Izin apa saja yang diminta?</button>
+                    <button class="chip">Bagaimana cara menghentikannya?</button>
                 `;
                 break;
-                
+
             case "And many more..":
                 statsHTML = `
                     <div class="stats-tabs">
@@ -1026,6 +932,7 @@ function setupDashboardDemo() {
         if (tabName === 'Task & Scheduling' && window.REDDIE_SCHEDULE) window.REDDIE_SCHEDULE();
         if (tabName === 'Research' && window.REDDIE_NEWS) window.REDDIE_NEWS();
         if (tabName === 'Analyze' && window.REDDIE_CRYPTO) window.REDDIE_CRYPTO();
+        if (tabName === 'Connectivity' && window.REDDIE_AGENTIC) window.REDDIE_AGENTIC();
         if (tabName === 'Automation') { if (window.REDDIE_AUTOMATION) window.REDDIE_AUTOMATION(); }
         else if (window.REDDIE_HIDE_GRAPH) window.REDDIE_HIDE_GRAPH();
     }

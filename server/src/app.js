@@ -17,6 +17,8 @@ import { googleStatus } from './google.js';
 import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleTool } from './news.js';
 import { buatLaporanBerita, ReportError } from './report.js';
 import { fetchTrending, CryptoError, CRYPTO_TOOL, runCryptoTool } from './crypto.js';
+import { cekOperator, kirimKeSesi, daftarSesi, operatorSiap, ACTIONS, TARGETS, PERMISSIONS,
+         BridgeError } from './bridge.js';
 import { checkConnections, listWorkflows, runWorkflow, n8nReady,
          AUTOMATION_TOOLS, runAutomationTool, AutomationError } from './automation.js';
 
@@ -361,6 +363,36 @@ export function buildApp() {
     const t = await updateTask(cfg, req.params.id, { status: req.body?.status, title: req.body?.title });
     res.json({ task: t });
   }));
+
+  // ═══════════════ JEMBATAN AGENT ═══════════════
+  // Dipanggil Hermes dari server. Setiap perintah divalidasi terhadap daftar
+  // tertutup di bridge.js sebelum diteruskan ke browser pengunjung.
+
+  app.get('/api/bridge/info', (_req, res) => {
+    res.json({
+      siap: operatorSiap(),
+      actions: Object.entries(ACTIONS).map(([k, v]) => ({ nama: k, arg: v.arg, keterangan: v.desc })),
+      targets: TARGETS,
+      permissions: PERMISSIONS,
+    });
+  });
+
+  // Operator (Hermes) — butuh token tersendiri, bukan JWT admin.
+  app.get('/api/bridge/sessions', (req, res) => {
+    try { cekOperator(req.headers.authorization); res.json({ sesi: daftarSesi() }); }
+    catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+  });
+
+  app.post('/api/bridge/command', (req, res) => {
+    try {
+      cekOperator(req.headers.authorization);
+      const { kode, action, arg } = req.body || {};
+      res.json(kirimKeSesi(kode, action, arg));
+    } catch (e) {
+      res.status(e instanceof BridgeError ? e.status : 500)
+         .json({ error: e.message || 'Perintah gagal dikirim.' });
+    }
+  });
 
   // ═══════════════ AUTOMATION ═══════════════
 

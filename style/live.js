@@ -793,6 +793,197 @@
         }).catch(function (err) { meetMsg(err.message, true); });
     }
 
+    // ── Agentic Control: agent mengendalikan tampilan ────────────────
+    // Sesi HANYA dimulai pengunjung. Tidak ada koneksi otomatis saat panel
+    // dibuka — agent tidak boleh bisa menempel ke tab orang yang tidak
+    // mengundangnya.
+    var agentik = { ws: null, kode: null, izin: {} };
+
+    function agentikStatus(t, warna) {
+        var el = document.querySelector('[data-agentikmsg]');
+        if (el) { el.textContent = t || ''; el.style.color = warna || '#6b7280'; }
+    }
+
+    function spandukKendali(aktif) {
+        var b = document.getElementById('reddieControlBanner');
+        if (!aktif) { if (b) b.remove(); return; }
+        if (b) return;
+        b = document.createElement('div');
+        b.id = 'reddieControlBanner';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#111827;' +
+            'color:#fff;display:flex;align-items:center;justify-content:center;gap:.9rem;' +
+            'padding:.55rem 1rem;font:600 12.5px system-ui,sans-serif;box-shadow:0 2px 12px rgba(0,0,0,.25);';
+        b.innerHTML =
+            '<span style="display:flex;align-items:center;gap:.45rem;">' +
+              '<span style="width:8px;height:8px;border-radius:50%;background:#22c55e;' +
+              'box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:reddiePulse 1.6s infinite;"></span>' +
+              'Reddie sedang mengendalikan tampilan ini</span>' +
+            '<button id="reddieControlStop" style="background:#fff;color:#111827;border:none;' +
+              'border-radius:99px;padding:.25rem .8rem;font:800 11.5px system-ui;cursor:pointer;">Hentikan</button>';
+        document.body.appendChild(b);
+        document.getElementById('reddieControlStop').onclick = putusAgentik;
+
+        if (!document.getElementById('reddiePulseStyle')) {
+            var st = document.createElement('style');
+            st.id = 'reddiePulseStyle';
+            st.textContent = '@keyframes reddiePulse{70%{box-shadow:0 0 0 9px rgba(34,197,94,0)}' +
+                             '100%{box-shadow:0 0 0 0 rgba(34,197,94,0)}}';
+            document.head.appendChild(st);
+        }
+    }
+
+    function putusAgentik() {
+        if (agentik.ws) { try { agentik.ws.close(); } catch (e) {} }
+        agentik.ws = null; agentik.kode = null; agentik.izin = {};
+        spandukKendali(false);
+        renderAgentik();
+        agentikStatus('Sesi dihentikan. Reddie tidak lagi mengendalikan tampilan ini.');
+    }
+
+    // ── Pelaksana tindakan ───────────────────────────────────────────
+    var PETA_MENU = {
+        chat: 'Chat & Discussion', task: 'Real-Time Discussion', schedule: 'Task & Scheduling',
+        investment: 'Analyze', news: 'Research', automation: 'Automation',
+    };
+    var PETA_TARGET = {
+        sidebar: '.sidebar-menu', panel: '.db-stats-col', chat: '#chatViewport',
+        workflow: '[data-autofile]', graph: '[data-chatvisual]', input: '#chatInput',
+    };
+
+    function sorot(sel) {
+        var el = document.querySelector(sel);
+        if (!el) return;
+        var l = el.style.outline, o = el.style.outlineOffset;
+        el.style.outline = '3px solid #ff3333';
+        el.style.outlineOffset = '3px';
+        setTimeout(function () { el.style.outline = l; el.style.outlineOffset = o; }, 2200);
+    }
+
+    function jalankanTindakan(c) {
+        try {
+            if (c.action === 'open_menu') {
+                var nama = PETA_MENU[c.arg];
+                var item = [].filter.call(document.querySelectorAll('.menu-item'),
+                    function (m) { return m.dataset.key === nama; })[0];
+                if (item) item.click();
+            } else if (c.action === 'send_chat') {
+                if (window.reddieSend) window.reddieSend(c.arg);
+            } else if (c.action === 'run_workflow') {
+                var b = document.querySelector('[data-runwf="' + c.arg + '"]');
+                if (b) b.click();
+            } else if (c.action === 'highlight') {
+                sorot(PETA_TARGET[c.arg]);
+            } else if (c.action === 'scroll') {
+                var t = document.querySelector(PETA_TARGET[c.arg]);
+                if (t) t.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            } else if (c.action === 'toast') {
+                agentikStatus(c.arg, '#111827');
+            } else if (c.action === 'ask_permission') {
+                mintaIzin(c.arg);
+            } else if (c.action === 'capture') {
+                agentikStatus('Permintaan cuplikan ' + c.arg + ' diterima.', '#111827');
+            }
+        } catch (e) { /* satu tindakan gagal tidak mematikan sesi */ }
+    }
+
+    // Izin diminta lewat API browser, jadi dialognya milik browser — bukan
+    // tiruan kita. Pengunjung bisa menolak, dan penolakan dilaporkan balik.
+    function mintaIzin(kind) {
+        var selesai = function (ok) {
+            agentik.izin[kind] = ok;
+            if (agentik.ws && agentik.ws.readyState === 1) {
+                agentik.ws.send(JSON.stringify({ type: 'permission', kind: kind, granted: ok }));
+            }
+            agentikStatus(ok ? 'Izin ' + kind + ' diberikan.' : 'Izin ' + kind + ' ditolak.',
+                          ok ? '#16a34a' : '#b91c1c');
+            renderAgentik();
+        };
+        try {
+            if (kind === 'camera' || kind === 'microphone') {
+                navigator.mediaDevices.getUserMedia(kind === 'camera' ? { video: true } : { audio: true })
+                    .then(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); selesai(true); })
+                    .catch(function () { selesai(false); });
+            } else if (kind === 'screen') {
+                navigator.mediaDevices.getDisplayMedia({ video: true })
+                    .then(function (st) { st.getTracks().forEach(function (t) { t.stop(); }); selesai(true); })
+                    .catch(function () { selesai(false); });
+            } else if (kind === 'clipboard') {
+                navigator.clipboard.readText().then(function () { selesai(true); })
+                    .catch(function () { selesai(false); });
+            } else selesai(false);
+        } catch (e) { selesai(false); }
+    }
+
+    function mulaiAgentik() {
+        if (agentik.ws) return;
+        agentikStatus('Menyambungkan…');
+        var proto = location.protocol === 'https:' ? 'wss://' : 'ws://';
+        var path = location.pathname.replace(/[^/]*$/, '') + 'api/bridge';
+        var ws = new WebSocket(proto + location.host + path);
+        agentik.ws = ws;
+
+        ws.onmessage = function (ev) {
+            var m; try { m = JSON.parse(ev.data); } catch (e) { return; }
+            if (m.type === 'ready') {
+                agentik.kode = m.kode;
+                spandukKendali(true);
+                renderAgentik();
+                agentikStatus('Tersambung. Berikan kode ini ke agent.');
+            } else if (m.type === 'command') {
+                jalankanTindakan(m);
+            }
+        };
+        ws.onclose = function () {
+            if (agentik.ws === ws) { agentik.ws = null; agentik.kode = null; spandukKendali(false); renderAgentik(); }
+        };
+        ws.onerror = function () { agentikStatus('Koneksi gagal. Coba lagi sebentar.', '#b91c1c'); };
+    }
+
+    function renderAgentik() {
+        var box = document.querySelector('[data-agenticpanel]');
+        if (!box) return;
+        var aktif = !!agentik.kode;
+        var izinBaris = ['camera', 'microphone', 'screen', 'clipboard'].map(function (k) {
+            var ok = agentik.izin[k];
+            return '<span style="font-size:.62rem;font-weight:700;padding:.12rem .5rem;border-radius:99px;' +
+                   'background:' + (ok ? 'rgba(22,163,74,.12)' : 'rgba(0,0,0,.05)') + ';' +
+                   'color:' + (ok ? '#16a34a' : '#9ca3af') + ';">' + k + '</span>';
+        }).join(' ');
+
+        box.innerHTML = aktif
+            ? '<div style="background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.25);' +
+                'border-radius:11px;padding:.75rem .85rem;margin-bottom:.7rem;">' +
+                '<div style="font-size:.7rem;color:#166534;font-weight:800;letter-spacing:.06em;">KODE SESI</div>' +
+                '<div style="font-family:ui-monospace,monospace;font-size:1.5rem;font-weight:800;' +
+                  'color:#111827;letter-spacing:.12em;">' + esc(agentik.kode) + '</div>' +
+                '<div style="font-size:.68rem;color:#4b5563;margin-top:.2rem;">' +
+                  'Berikan kode ini ke agent agar ia bisa mengendalikan tampilan ini.</div>' +
+              '</div>' +
+              '<div style="font-size:.68rem;color:#6b7280;margin-bottom:.35rem;">Izin yang sudah diberikan:</div>' +
+              '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.7rem;">' + izinBaris + '</div>' +
+              '<button data-agentikstop style="width:100%;background:none;color:#b91c1c;' +
+                'border:1px solid rgba(185,28,28,.3);border-radius:9px;padding:.55rem;' +
+                'font:700 .78rem system-ui;cursor:pointer;">Hentikan kendali</button>'
+            : '<p style="font-size:.76rem;color:#4b5563;line-height:1.6;margin:0 0 .8rem;">' +
+                'Reddie dapat mengoperasikan tampilan ini sendiri — berpindah menu, menjalankan ' +
+                'otomasi, dan mengetik di kolom chat — sementara Anda menonton.<br><br>' +
+                'Kendalinya <b>terbatas pada halaman ini</b>. Perangkat, berkas, dan aplikasi lain ' +
+                'Anda tidak tersentuh. Kamera, mikrofon, layar, dan papan klip hanya bisa ' +
+                '<i>diminta</i> — yang memberi izin tetap dialog browser Anda sendiri.</p>' +
+              '<button data-agentikstart style="width:100%;background:#16192a;color:#fff;border:none;' +
+                'border-radius:11px;padding:.7rem;font:800 .85rem system-ui;cursor:pointer;">' +
+                'Izinkan Reddie mengendalikan tampilan</button>';
+
+        box.innerHTML += '<p data-agentikmsg style="font-size:.7rem;color:#6b7280;margin:.6rem 0 0;' +
+                         'text-align:center;line-height:1.5;"></p>';
+    }
+    window.REDDIE_AGENTIC = renderAgentik;
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-agentikstart]')) { e.preventDefault(); mulaiAgentik(); }
+        else if (e.target.closest('[data-agentikstop]')) { e.preventDefault(); putusAgentik(); }
+    });
+
     // ── Panel Automation: peta koneksi + workflow ────────────────────
     // Peta digambar sebagai SVG hub-and-spoke. Garis yang hidup diberi
     // animasi aliran; yang mati diam dan pudar — jadi keadaan sistem
@@ -1327,7 +1518,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-j4';
+        sc.src = 'style/editor.js?v=20260902-a1';
         document.body.appendChild(sc);
     }
 

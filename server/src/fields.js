@@ -81,6 +81,8 @@ export const FIELDS = {
   'console.sched_tab1':  { label: 'Tab jadwal',        type: 'text', max: 20, help: 'Tab pertama di modul Schedule.', value: 'Schedule List' },
   'console.sched_tab2':  { label: 'Tab meeting',       type: 'text', max: 20, help: 'Tab kedua di modul Schedule.', value: 'Meeting' },
   'console.sched_title': { label: 'Judul modul jadwal', type: 'text', max: 24, help: 'Judul besar di modul Schedule.', value: 'Schedule' },
+  'console.agentic_tab':   { label: 'Tab agentic',        type: 'text', max: 20, help: 'Tab di modul Agentic Control.', value: 'Agentic' },
+  'console.agentic_title': { label: 'Judul panel agentic', type: 'text', max: 24, help: 'Judul besar di modul Agentic Control.', value: 'Agentic Control' },
   'console.auto_tab':   { label: 'Tab automation',        type: 'text', max: 20, help: 'Tab di modul Automation.', value: 'Connections' },
   'console.auto_title': { label: 'Judul panel automation', type: 'text', max: 24, help: 'Judul besar di modul Automation.', value: 'Automation' },
   'console.inv_tab':   { label: 'Tab investasi',       type: 'text', max: 20, help: 'Tab di modul Investment.', value: 'Trending' },
@@ -90,7 +92,7 @@ export const FIELDS = {
   'console.menu_analyze':      { label: 'Menu 4', type: 'text', max: 26, help: 'Menu kolom kiri. Panel harga kripto trending.', value: 'Investment' },
   'console.menu_research':     { label: 'Menu 5', type: 'text', max: 26, help: 'Menu kolom kiri. Panel berita trending; klik judul untuk minta ringkasan lewat chat.', value: 'News' },
   'console.menu_automation':   { label: 'Menu 6', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Automation' },
-  'console.menu_connectivity': { label: 'Menu 7', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Connectivity' },
+  'console.menu_connectivity': { label: 'Menu 7', type: 'text', max: 26, help: 'Menu kolom kiri. Agent mengendalikan tampilan lewat WebSocket, atas izin pengunjung.', value: 'Agentic' },
   'console.menu_more':         { label: 'Menu 8', type: 'text', max: 26, help: 'Menu terakhir, ditampilkan miring.', value: 'And many more..' },
 
   // ── Sambutan chat ───────────────────────────────────────
