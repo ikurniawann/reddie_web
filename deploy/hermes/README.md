@@ -1,5 +1,16 @@
 # Menghubungkan Hermes ke Agentic Control
 
+## Skill Hermes
+
+`SKILL.md` di folder ini adalah salinan skill yang sudah terpasang di
+`~/.hermes/skills/reddie-control/`. Dengan skill itu, Hermes tahu sendiri
+cara memakai jembatan — cukup diberi kode sesinya lewat WhatsApp atau
+terminal, tanpa perlu dijelaskan ulang tiap kali.
+
+Bila Hermes dipasang ulang atau dipindah mesin, salin berkas itu ke
+`~/.hermes/skills/reddie-control/SKILL.md`.
+
+
 Hermes mengendalikan tampilan pengunjung lewat **HTTP biasa**, bukan
 WebSocket. Server Reddie yang memegang koneksi WebSocket ke browser dan
 menegakkan daftar tindakan yang diizinkan. Hermes cukup mengirim POST.
