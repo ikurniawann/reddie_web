@@ -8,6 +8,7 @@ import { complete, providerReady, ProviderError } from './providers.js';
 import { fieldSchema, TABLES, ICONS } from './fields.js';
 import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
 import { publishedContent, buildDraft, publish, latestVersion, restoreToDraft, draftStatus } from './content.js';
+import { transcriptFor, buildPDF, buildXLSX, extractTicket, pushWebhook, SkillError } from './skills.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -137,6 +138,72 @@ export function buildApp() {
       res.status(status).json({ error: 'Layanan AI sedang tidak tersedia. Coba lagi sebentar.', sessionId: sid });
     }
   });
+
+  // ═══════════════ AI SKILLS ═══════════════
+  // Publik: pemanggilnya adalah pengunjung yang memegang sessionId percakapan
+  // miliknya sendiri. UUID itu yang berperan sebagai kunci akses.
+
+  const skillGuard = (fn) => async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try { await fn(req, res); }
+    catch (e) {
+      if (e instanceof SkillError) return res.status(e.status).json({ error: e.message });
+      console.error('[skill]', e);
+      res.status(500).json({ error: 'Gagal memproses. Coba lagi sebentar.' });
+    }
+  };
+
+  app.post('/api/skills/pdf', skillGuard(async (req, res) => {
+    const t = await transcriptFor(req.body?.sessionId);
+    const buf = await buildPDF(t);
+    res.set({
+      'content-type': 'application/pdf',
+      'content-disposition': `attachment; filename="reddie-transkrip-${String(t.session.id).slice(0, 8)}.pdf"`,
+      'content-length': buf.length,
+    }).send(buf);
+  }));
+
+  app.post('/api/skills/xlsx', skillGuard(async (req, res) => {
+    const t = await transcriptFor(req.body?.sessionId);
+    const buf = await buildXLSX(t);
+    res.set({
+      'content-type': 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'content-disposition': `attachment; filename="reddie-transkrip-${String(t.session.id).slice(0, 8)}.xlsx"`,
+      'content-length': buf.length,
+    }).send(buf);
+  }));
+
+  // Sync: AI membaca percakapan, hasilnya jadi tiket di tabel leads, lalu
+  // dikirim ke webhook otomasi bila alamatnya sudah diisi lewat CMS.
+  app.post('/api/skills/sync', skillGuard(async (req, res) => {
+    const { session, messages } = await transcriptFor(req.body?.sessionId);
+
+    const modelRow = (await q(
+      `SELECT provider, model_id FROM ai_models WHERE enabled
+       ORDER BY (model_id = $1) DESC, is_default DESC, sort LIMIT 1`, [session.model_id])).rows[0];
+    const info = await extractTicket(messages, modelRow);
+
+    const lead = (await q(
+      `INSERT INTO leads (name, email, message, source, meta)
+       VALUES ($1,$2,$3,'chat',$4) RETURNING id, created_at`,
+      [null, info.kontak, info.ringkasan, JSON.stringify({
+        session_id: session.id, agent: session.agent_slug, model: session.model_id,
+        kebutuhan: info.kebutuhan, prioritas: info.prioritas, topik: info.topik,
+        pesan: messages.length, ai: info.ai,
+      })])).rows[0];
+
+    const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0];
+    const hook = await pushWebhook((cfg?.value || {}).webhook_url, {
+      event: 'reddie.chat.synced',
+      ticket: lead.id,
+      created_at: lead.created_at,
+      session: { id: session.id, agent: session.agent_slug, model: session.model_id, messages: messages.length },
+      ...info,
+    });
+
+    res.json({ ticket: lead.id, ...info, webhook: hook.status, webhook_reason: hook.reason || null });
+  }));
 
   // Lead capture: form contact, login modal, dsb.
   app.post('/api/leads', async (req, res) => {

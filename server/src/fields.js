@@ -28,6 +28,7 @@ export const GROUPS = {
   socials: 'Tautan sosial',
   contact: 'Formulir kontak',
   login:   'Jendela masuk',
+  integrations: 'Integrasi & otomasi',
 };
 
 export const FIELDS = {
@@ -127,6 +128,18 @@ export const FIELDS = {
   'login.submit':         { label: 'Tombol masuk',          type: 'text', max: 20, value: 'Log In' },
   'login.footer_text':    { label: 'Ajakan daftar',         type: 'text', max: 40, help: 'Kalimat di bagian paling bawah jendela masuk.', value: "Don't have an account?" },
   'login.signup':         { label: 'Tautan daftar',         type: 'text', max: 20, value: 'Sign up' },
+
+  // ── Integrasi ───────────────────────────────────────────
+  'integrations.webhook_url': {
+    label: 'Alamat webhook otomasi', type: 'url', max: 300,
+    help: 'Setiap kali pengunjung menekan tombol Sync, ringkasan percakapan dikirim ke alamat ini. Cocok diisi URL webhook n8n. Boleh dikosongkan — tombolnya tetap berfungsi menyimpan tiket, hanya tidak mengirim ke mana-mana.',
+    value: '',
+  },
+  'integrations.sync_label': {
+    label: 'Judul kartu hasil sync', type: 'text', max: 40,
+    help: 'Judul kartu yang muncul di chat setelah pengunjung menekan tombol Sync.',
+    value: 'Tiket dibuat',
+  },
 };
 
 // Susun nilai awal jadi bentuk tabel settings: { hero: {title, subtitle}, ... }

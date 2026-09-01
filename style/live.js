@@ -189,67 +189,101 @@
         }
     }
 
-    // ── Ekspor NYATA (menggantikan mock via capture-phase) ───────────
-    function transcriptRows() {
-        var rows = [];
-        document.querySelectorAll('#chatConversation .chat-msg').forEach(function (m) {
-            if (m.classList.contains('typing')) return;
-            var bubble = m.querySelector('.msg-bubble');
-            if (!bubble) return;
-            rows.push({
-                role: m.classList.contains('agent') ? 'Reddie' : 'User',
-                text: (bubble.innerText != null ? bubble.innerText : bubble.textContent).trim(),
+    // ── AI Skills: dikerjakan server, bukan disalin dari DOM ─────────
+    // Versi lama menyalin teks dari layar, jadi hasilnya kehilangan waktu
+    // tiap pesan, model yang dipakai, dan ID sesi — semuanya tidak ada di
+    // DOM. Sekarang server membacanya langsung dari database.
+
+    function say(msg) {
+        if (window.appendMessage) { window.appendMessage(msg, 'agent'); }
+        if (window.scrollToBottom) window.scrollToBottom();
+    }
+
+    function openConversation() {
+        var w = document.getElementById('chatWelcomeState');
+        var c = document.getElementById('chatConversation');
+        if (w && c && w.style.display !== 'none') { w.style.display = 'none'; c.style.display = 'flex'; }
+    }
+
+    function needSession() {
+        if (state.sessionId) return true;
+        openConversation();
+        say('Belum ada percakapan untuk diproses — kirim satu pesan dulu.');
+        return false;
+    }
+
+    // Unduh berkas biner dari endpoint POST.
+    function downloadSkill(kind, label) {
+        if (!needSession()) return;
+        openConversation();
+        say('Menyiapkan ' + label + ' dari catatan server…');
+        fetch(API + '/skills/' + kind, {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId: state.sessionId }),
+        }).then(function (r) {
+            if (!r.ok) {
+                return r.json().catch(function () { return {}; }).then(function (d) {
+                    throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+                });
+            }
+            var name = 'reddie-transkrip.' + (kind === 'pdf' ? 'pdf' : 'xlsx');
+            var cd = r.headers.get('content-disposition') || '';
+            var m = cd.match(/filename="([^"]+)"/);
+            if (m) name = m[1];
+            return r.blob().then(function (blob) {
+                var a = document.createElement('a');
+                a.href = URL.createObjectURL(blob);
+                a.download = name;
+                document.body.appendChild(a); a.click(); a.remove();
+                setTimeout(function () { URL.revokeObjectURL(a.href); }, 8000);
+                say('**' + name + '** telah diunduh (' + Math.max(1, Math.round(blob.size / 1024)) + ' KB).');
             });
+        }).catch(function (e) {
+            say('Gagal menyiapkan ' + label + ': ' + e.message);
         });
-        return rows;
     }
 
-    function exportPDF() {
-        var rows = transcriptRows();
-        if (!rows.length) { if (window.appendMessage) { window.appendMessage('System Socket: Transkrip masih kosong — mulai chat dulu sebelum ekspor PDF.', 'agent'); window.scrollToBottom(); } return; }
-        var w = window.open('', '_blank', 'width=760,height=900');
-        if (!w) return;
-        w.document.write('<!DOCTYPE html><html><head><meta charset="utf-8"><title>Reddie Chat Transcript</title><style>' +
-            'body{font-family:system-ui,sans-serif;max-width:640px;margin:2rem auto;color:#111}' +
-            'h1{font-size:1.2rem;color:#ff3333} .meta{color:#6b7280;font-size:.8rem;margin-bottom:1.2rem}' +
-            '.m{margin:.6rem 0;padding:.6rem .8rem;border-radius:10px;font-size:.86rem;white-space:pre-wrap}' +
-            '.u{background:#fee2e2;margin-left:3rem} .a{background:#f3f4f6;margin-right:3rem}' +
-            '.r{font-weight:700;font-size:.7rem;text-transform:uppercase;color:#6b7280;margin-bottom:.2rem}' +
-            '@media print{body{margin:0.5cm auto}}</style></head><body>' +
-            '<h1>REDDIE — Chat Transcript</h1><div class="meta">' + esc(new Date().toLocaleString()) + ' · ' + rows.length + ' pesan · contoh.reddie.id/dev-reddie</div>' +
-            rows.map(function (r) {
-                return '<div class="m ' + (r.role === 'User' ? 'u' : 'a') + '"><div class="r">' + esc(r.role) + '</div>' + esc(r.text) + '</div>';
-            }).join('') + '<script>window.onload=function(){window.print()}<\/script></body></html>');
-        w.document.close();
-        if (window.appendMessage) { window.appendMessage('System Socket: Transkrip disiapkan — gunakan dialog cetak untuk menyimpan sebagai **PDF**.', 'agent'); window.scrollToBottom(); }
+    // Sync: AI membaca percakapan, hasilnya jadi tiket + kiriman webhook.
+    function runSync() {
+        if (!needSession()) return;
+        openConversation();
+        say('Menganalisis percakapan…');
+        fetch(API + '/skills/sync', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ sessionId: state.sessionId }),
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+                if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+                return d;
+            });
+        }).then(function (d) {
+            var title = ((state.settings.integrations || {}).sync_label) || 'Tiket dibuat';
+            var lines = ['**' + title + ' #' + d.ticket + '**', '', 'Ringkasan: ' + d.ringkasan];
+            if (d.kebutuhan) lines.push('Kebutuhan: ' + d.kebutuhan);
+            lines.push('Prioritas: ' + d.prioritas);
+            lines.push('Kontak: ' + (d.kontak || 'belum diberikan'));
+            if (d.topik && d.topik.length) lines.push('Topik: ' + d.topik.join(', '));
+            if (d.webhook === 'terkirim') lines.push('', 'Terkirim ke sistem otomasi.');
+            else if (d.webhook === 'gagal') lines.push('', 'Webhook otomasi gagal: ' + (d.webhook_reason || '-'));
+            say(lines.join('\n'));
+        }).catch(function (e) {
+            say('Sync gagal: ' + e.message);
+        });
     }
 
-    function exportCSV() {
-        var rows = transcriptRows();
-        if (!rows.length) { if (window.appendMessage) { window.appendMessage('System Socket: Transkrip masih kosong — mulai chat dulu sebelum ekspor spreadsheet.', 'agent'); window.scrollToBottom(); } return; }
-        var csv = '﻿"No","Role","Message"\r\n' + rows.map(function (r, i) {
-            return [i + 1, r.role, r.text].map(function (v) { return '"' + String(v).replace(/"/g, '""') + '"'; }).join(',');
-        }).join('\r\n');
-        var a = document.createElement('a');
-        a.href = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }));
-        a.download = 'reddie_chat_' + new Date().toISOString().slice(0, 10) + '.csv';
-        document.body.appendChild(a); a.click(); a.remove();
-        setTimeout(function () { URL.revokeObjectURL(a.href); }, 5000);
-        if (window.appendMessage) { window.appendMessage('System Socket: Transkrip diekspor — **' + a.download + '** (' + rows.length + ' baris) telah diunduh.', 'agent'); window.scrollToBottom(); }
-    }
-
-    // Capture-phase supaya handler mock di script.js tidak ikut jalan
+    // Capture-phase supaya handler mock di script.js tidak ikut berjalan.
     document.addEventListener('click', function (e) {
-        var pdf = e.target.closest('.btn-skill-pdf');
-        var xls = e.target.closest('.btn-skill-excel');
-        if (!pdf && !xls) return;
+        if (!state.ready) return;                       // API mati -> biarkan mock lama
+        var pdf  = e.target.closest('.btn-skill-pdf');
+        var xls  = e.target.closest('.btn-skill-excel');
+        var sync = e.target.closest('.btn-skill-sync');
+        if (!pdf && !xls && !sync) return;
         e.stopPropagation(); e.preventDefault();
-        var chatWelcome = document.getElementById('chatWelcomeState');
-        var conv = document.getElementById('chatConversation');
-        if (chatWelcome && conv && chatWelcome.style.display !== 'none' && transcriptRows().length) {
-            chatWelcome.style.display = 'none'; conv.style.display = 'flex';
-        }
-        if (pdf) exportPDF(); else exportCSV();
+        if (pdf) downloadSkill('pdf', 'PDF');
+        else if (xls) downloadSkill('xlsx', 'spreadsheet');
+        else runSync();
     }, true);
 
     // ── Lacak pilihan agent & model dari UI yang sudah ada ───────────
@@ -266,7 +300,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f3';
+        sc.src = 'style/editor.js?v=20260901-f4';
         document.body.appendChild(sc);
     }
 
