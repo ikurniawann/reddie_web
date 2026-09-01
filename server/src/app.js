@@ -249,9 +249,14 @@ export function buildApp() {
       }
       await fn(cfg, req, res);
     } catch (e) {
-      if (e instanceof TaskError) return res.status(e.status).json({ error: e.message });
-      console.error('[task]', e);
-      res.status(500).json({ error: 'Gagal menghubungi sistem task.' });
+      const msg = e instanceof TaskError ? e.message : 'Gagal menghubungi sistem task.';
+      if (!(e instanceof TaskError)) console.error('[task]', e);
+      // Sengaja HTTP 200 dengan penanda, bukan 5xx: Cloudflare menimpa badan
+      // respons 5xx dengan halaman errornya sendiri, sehingga pesan kita tidak
+      // pernah sampai ke browser dan panel salah menyimpulkan "belum
+      // dikonfigurasi". Permintaannya sendiri memang berhasil — yang ia
+      // laporkan adalah bahwa sistem di seberang sedang tidak bisa dihubungi.
+      res.status(200).json({ configured: true, unavailable: true, error: msg, tasks: [], entries: [] });
     }
   };
 

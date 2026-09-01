@@ -357,6 +357,18 @@
     }
 
     function renderTasks(box, d) {
+        // Dibedakan tegas: "belum dikonfigurasi" menyuruh admin mengisi
+        // pengaturan, "sedang tidak bisa dihubungi" tidak — mengirim orang
+        // ke panel admin saat masalahnya di server seberang hanya membuang
+        // waktu mereka.
+        if (d.unavailable) {
+            box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0 0 .6rem;line-height:1.5;">' +
+                '<i class="fa-solid fa-triangle-exclamation"></i> Sistem task sedang tidak bisa dihubungi.</p>' +
+                '<p style="font-size:.72rem;color:#6b7280;margin:0 0 .7rem;">' + esc(d.error || '') + '</p>' +
+                '<button data-taskretry style="width:100%;background:none;color:#374151;border:1px solid rgba(0,0,0,.15);' +
+                'border-radius:9px;padding:.55rem;font:700 .78rem system-ui;cursor:pointer;">Coba lagi</button>';
+            return;
+        }
         if (!d.configured) {
             box.innerHTML = '<p style="font-size:.78rem;color:#6b7280;margin:0;line-height:1.5;">' +
                 'Panel task belum tersambung. Isi alamat API dan nomor akun demo di panel admin, ' +
@@ -430,6 +442,7 @@
     }
 
     document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-taskretry]')) { e.preventDefault(); loadTasks(); return; }
         var btn = e.target.closest('[data-done]');
         if (!btn || btn.disabled) return;
         e.preventDefault();
@@ -517,6 +530,13 @@
     }
 
     function renderSchedList(box, d) {
+        if (d.unavailable) {
+            box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0 0 .6rem;">' +
+                '<i class="fa-solid fa-triangle-exclamation"></i> Jadwal sedang tidak bisa dimuat.</p>' +
+                '<button data-schedretry style="width:100%;background:none;color:#374151;border:1px solid rgba(0,0,0,.15);' +
+                'border-radius:9px;padding:.55rem;font:700 .78rem system-ui;cursor:pointer;">Coba lagi</button>';
+            return;
+        }
         if (!d.configured) {
             box.innerHTML = '<p style="font-size:.78rem;color:#6b7280;margin:0;line-height:1.5;">' +
                 'Modul jadwal belum tersambung. Isi pengaturan di panel admin, ' +
@@ -644,6 +664,7 @@
             });
             return;
         }
+        if (e.target.closest('[data-schedretry]')) { e.preventDefault(); loadSchedule(); return; }
         if (e.target.closest('[data-mcreate]')) { e.preventDefault(); createMeeting(); }
     });
 
@@ -830,7 +851,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g9';
+        sc.src = 'style/editor.js?v=20260901-h1';
         document.body.appendChild(sc);
     }
 
