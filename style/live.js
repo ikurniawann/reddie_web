@@ -389,7 +389,7 @@
             '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin-bottom:.55rem;">' +
               lbl('task_section', 'UPCOMING TASKS') + '</div>' +
             (tasks.length
-              ? tasks.slice(0, 6).map(taskRow).join('')
+              ? tasks.map(taskRow).join('')
               : '<p style="font-size:.78rem;color:#6b7280;margin:0 0 .6rem;">Belum ada task. Buat yang pertama di bawah.</p>') +
 
             '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin:1.1rem 0 .55rem;">' +
@@ -862,7 +862,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h2';
+        sc.src = 'style/editor.js?v=20260901-h3';
         document.body.appendChild(sc);
     }
 

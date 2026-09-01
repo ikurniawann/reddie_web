@@ -73,7 +73,7 @@ export const FIELDS = {
   'console.menu_chat':         { label: 'Menu 1', type: 'text', max: 26, help: 'Menu kolom kiri. Mengubah tulisannya aman — fungsinya tidak ikut berubah.', value: 'Chat & Discussion' },
   'console.menu_realtime':     { label: 'Menu 2', type: 'text', max: 26, help: 'Menu kolom kiri. Menu ini menampilkan panel Task Focus yang terhubung ke sistem manajemen task.', value: 'Task Focus' },
   'console.task_tab':   { label: 'Judul tab Task Focus',  type: 'text', max: 24, help: 'Tab di atas daftar task.', value: 'Task Focus' },
-  'console.task_title': { label: 'Judul panel task',      type: 'text', max: 24, help: 'Judul besar di atas daftar task.', value: 'Task Scheduler' },
+  'console.task_title': { label: 'Judul panel task',      type: 'text', max: 24, help: 'Judul besar di atas daftar task.', value: 'Task Focus' },
   'console.task_section': { label: 'Label daftar task', type: 'text', max: 28, help: 'Label kecil di atas kartu-kartu task.', value: 'UPCOMING TASKS' },
   'console.task_progress': { label: 'Label progres', type: 'text', max: 30, help: 'Label kecil di atas batang progres.', value: 'WEEKLY TASK COMPLETION' },
   'console.menu_task':         { label: 'Menu 3', type: 'text', max: 26, help: 'Menu kolom kiri. Modul jadwal & meeting yang terhubung ke Google Calendar.', value: 'Schedule' },
@@ -186,8 +186,8 @@ export const FIELDS = {
   },
   'integrations.task_limit': {
     label: 'Jumlah task yang ditampilkan', type: 'int',
-    help: 'Berapa task berjalan yang tampil di panel. Sisanya tetap dihitung di angka progres.',
-    value: 3,
+    help: 'Berapa task berjalan yang tampil di panel. Isi 0 untuk menampilkan semuanya.',
+    value: 0,
   },
   'integrations.task_event_id': {
     label: 'ID event untuk task baru', type: 'text', max: 60, private: true,

@@ -698,7 +698,7 @@ function setupDashboardDemo() {
                     <div class="stats-scroll-content">
                         <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;">
                             <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
-                                data-cms="console.task_title">Task Scheduler</h3>
+                                data-cms="console.task_title">Task Focus</h3>
                             <i class="fa-solid fa-calendar-days" style="font-size:1.05rem;color:#374151;"></i>
                         </div>
                         <div data-taskpanel>

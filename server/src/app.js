@@ -265,8 +265,11 @@ export function buildApp() {
   };
 
   app.get('/api/tasks', taskGuard(async (cfg, req, res) => {
-    const cfgLimit = Number((await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value?.task_limit) || 3;
-    const limit = Math.min(Math.max(Number(req.query.limit || cfgLimit), 1), 20);
+    // 0 atau kosong berarti tampilkan semua. Batas atas 200 hanya penjaga
+    // agar satu proyek dengan ratusan task tidak membanjiri panel sempit.
+    const cfgLimit = Number((await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value?.task_limit);
+    const asked = Number(req.query.limit) || cfgLimit;
+    const limit = asked > 0 ? Math.min(asked, 200) : 200;
     const r = await listTasks(cfg, { limit });
     res.set('cache-control', 'no-store');
     res.json({ configured: true, tasks: r.tasks, running: r.running, done: r.done, total: r.total });
