@@ -101,6 +101,19 @@
   .icontile { border:2px solid var(--line); border-radius:8px; padding:.55rem 0; cursor:pointer; background:#fff; font-size:1.15rem; color:var(--txt-2); }
   .icontile:hover, .icontile.on { border-color:var(--red); color:var(--red); background:var(--red-soft); }
   .drop { margin-top:1rem; border:2px dashed var(--line-2); border-radius:10px; padding:1.2rem; text-align:center; color:var(--mut); font-size:.85rem; cursor:pointer; }
+  .pubbar { position:sticky; top:0; z-index:150; background:var(--card); border:1px solid var(--line);
+    border-radius:12px; padding:.75rem 1rem; margin-bottom:1rem; display:flex; align-items:center;
+    gap:.8rem; flex-wrap:wrap; box-shadow:0 2px 10px rgba(0,0,0,.05); }
+  .pubbar.dirty { border-color:#e6c98a; background:var(--warn-soft); }
+  .pubbar .lbl { flex:1; min-width:14rem; font-size:.86rem; }
+  .pubbar .lbl b { display:block; color:var(--txt); }
+  .pubbar .lbl span { color:var(--mut); font-size:.78rem; }
+  .pubbar.dirty .lbl b { color:var(--warn); }
+  .verrow { display:flex; align-items:center; gap:.7rem; padding:.7rem 0; border-top:1px solid var(--line); }
+  .verrow:first-of-type { border-top:none; }
+  .verrow .id { font-family:ui-monospace,monospace; font-size:.78rem; color:var(--mut); flex:0 0 3rem; }
+  .verrow .info { flex:1; min-width:10rem; font-size:.85rem; }
+  .verrow .info small { display:block; color:var(--mut); font-size:.75rem; }
   .drop.hot { border-color:var(--red); background:var(--red-soft); color:var(--red); }
 </style>
 </head>
@@ -123,6 +136,7 @@
   </div>
 
   <div id="panel" style="display:none">
+    <div class="pubbar" id="pubbar" style="display:none"></div>
     <nav class="tabs" id="tabs"></nav>
     <div id="content"></div>
   </div>
@@ -354,6 +368,74 @@ function wireListRemove(lf) {
   lf.querySelectorAll('[data-rm-li]').forEach(b => b.onclick = () => b.parentElement.remove());
 }
 
+// ═══════════════ BILAH TERBIT ═══════════════
+// Inti Fase 3: menyimpan tidak sama dengan menayangkan. Selama bilah ini
+// menunjukkan ada perubahan, pengunjung masih melihat versi lama.
+async function refreshPubBar() {
+  const bar = $('#pubbar');
+  let st;
+  try { st = await api('/admin/status'); } catch { bar.style.display = 'none'; return; }
+  const when = st.lastPublishedAt
+    ? new Date(st.lastPublishedAt).toLocaleString('id-ID', { dateStyle:'medium', timeStyle:'short' })
+    : null;
+  bar.style.display = 'flex';
+  bar.className = 'pubbar' + (st.hasChanges ? ' dirty' : '');
+  bar.innerHTML = st.hasChanges
+    ? `<div class="lbl"><b>Ada perubahan yang belum tayang</b>
+         <span>Pengunjung masih melihat versi ${st.versionId ? '#' + st.versionId : 'lama'}${when ? ' dari ' + when : ''}.</span></div>
+       <button class="act ghost sm" data-preview>Pratinjau</button>
+       <button class="act" data-publish>Terbitkan sekarang</button>`
+    : `<div class="lbl"><b>Semua perubahan sudah tayang</b>
+         <span>Versi ${st.versionId ? '#' + st.versionId : '—'}${when ? ' · diterbitkan ' + when : ''}${st.lastPublishedBy ? ' oleh ' + esc(st.lastPublishedBy) : ''}.</span></div>
+       <button class="act ghost sm" data-preview>Lihat situs</button>`;
+
+  const pv = bar.querySelector('[data-preview]');
+  if (pv) pv.onclick = () => window.open(ROOT + (st.hasChanges ? '?preview=1' : ''), '_blank');
+  const pb = bar.querySelector('[data-publish]');
+  if (pb) pb.onclick = async () => {
+    const note = prompt('Keterangan singkat perubahan ini (boleh dikosongkan):', '');
+    if (note === null) return;
+    pb.disabled = true; pb.textContent = 'Menerbitkan…';
+    try {
+      const r = await api('/admin/publish', { method:'POST', body: JSON.stringify({ note }) });
+      toast('Diterbitkan sebagai versi #' + r.version.id + ' — sudah tayang.');
+      await refreshPubBar();
+      if (cur === 'versions') show('versions');
+    } catch (e) { toast(e.message, true); pb.disabled = false; pb.textContent = 'Terbitkan sekarang'; }
+  };
+}
+
+// ═══════════════ TAB: RIWAYAT ═══════════════
+async function versions(c) {
+  const rows = await api('/admin/versions');
+  const st = await api('/admin/status');
+  c.innerHTML = `<div class="card"><h3>Riwayat versi</h3>
+    <p class="sub">Setiap penerbitan tersimpan utuh. Mengembalikan versi lama tidak menghapus
+      versi sesudahnya — ia membuat versi baru berisi salinannya, jadi tidak ada langkah di sini
+      yang bisa menghilangkan riwayat.</p>
+    ${rows.map((v, i) => `<div class="verrow">
+      <span class="id">#${v.id}</span>
+      <div class="info"><b>${esc(v.note || 'Tanpa keterangan')}</b>
+        <small>${new Date(v.created_at).toLocaleString('id-ID',{dateStyle:'medium',timeStyle:'short'})}
+        ${v.published_by ? ' · ' + esc(v.published_by) : ''}
+        ${v.restored_from ? ' · salinan dari #' + v.restored_from : ''}
+        · ${v.agents} agent, ${v.skills} kartu</small></div>
+      ${i === 0 ? '<span class="pill ok">tayang</span>'
+                : `<button class="act ghost sm" data-r="${v.id}">Kembalikan</button>`}
+    </div>`).join('')}
+    ${st.hasChanges ? '<div class="foot"><span class="state dirty">Draft saat ini punya perubahan yang belum tayang.</span></div>' : ''}
+    </div>`;
+  c.querySelectorAll('[data-r]').forEach(b => b.onclick = async () => {
+    if (!confirm(`Kembalikan seluruh konten situs ke versi #${b.dataset.r}?\n\nIni langsung tayang, dan versi sekarang tetap tersimpan di riwayat.`)) return;
+    b.disabled = true;
+    try {
+      const r = await api('/admin/versions/' + b.dataset.r + '/restore', { method:'POST', body:'{}' });
+      toast('Dikembalikan — sekarang tayang sebagai versi #' + r.version.id);
+      await refreshPubBar(); show('versions');
+    } catch (e) { toast(e.message, true); b.disabled = false; }
+  });
+}
+
 // ═══════════════ TAB: KONTEN SITUS ═══════════════
 async function settings(c) {
   const values = await api('/admin/settings');
@@ -554,6 +636,7 @@ const TABS = [
   ['media',    'Galeri gambar', media],
   ['models',   'Model AI',      models],
   ['leads',    'Pesan masuk',   leads],
+  ['versions', 'Riwayat versi', versions],
   ['chats',    'Riwayat chat',  chats],
 ];
 let cur = 'settings';
@@ -564,6 +647,7 @@ async function show(t) {
   const fn = (TABS.find(x => x[0] === t) || [])[2];
   try { await fn(c); }
   catch (e) { c.innerHTML = `<div class="card"><h3>Gagal memuat</h3><p class="muted">${esc(e.message)}</p></div>`; }
+  refreshPubBar();
 }
 
 $('#loginBtn').onclick = async () => {

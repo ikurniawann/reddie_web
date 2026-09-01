@@ -266,18 +266,44 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f2';
+        sc.src = 'style/editor.js?v=20260901-f3';
         document.body.appendChild(sc);
     }
 
+    // Mode pratinjau: ?edit=1 atau ?preview=1 memuat DRAFT (isi tabel kerja)
+    // alih-alih versi terbit, sehingga admin melihat hasil suntingannya
+    // sebelum pengunjung melihatnya. Butuh token admin; tanpa token, server
+    // mengabaikan permintaan draft dan tetap mengirim versi terbit.
+    function contentRequest() {
+        var preview = /[?&](edit|preview)=1/.test(location.search);
+        var tok = null;
+        try { tok = localStorage.getItem('tok'); } catch (e) { /* penyimpanan diblokir */ }
+        if (!preview || !tok) return fetch(API + '/content', { signal: AbortSignal.timeout(6000) });
+        return fetch(API + '/content?draft=1', {
+            headers: { authorization: 'Bearer ' + tok },
+            signal: AbortSignal.timeout(6000),
+        });
+    }
+
+    function draftBanner() {
+        var b = document.createElement('div');
+        b.textContent = 'PRATINJAU DRAFT — belum terlihat pengunjung';
+        b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:99998;background:#b45309;' +
+            'color:#fff;text-align:center;padding:.4rem;font:700 12px system-ui,sans-serif;' +
+            'letter-spacing:.04em';
+        document.body.appendChild(b);
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
-        fetch(API + '/content', { signal: AbortSignal.timeout(6000) })
+        contentRequest()
             .then(function (r) { if (!r.ok) throw new Error('HTTP ' + r.status); return r.json(); })
             .then(function (d) {
                 state.ready = true;
                 window.__reddieContent = d;
                 hydrate(d);
-                console.log('[reddie-live] CMS aktif — model tersedia:', (d.models || []).length);
+                if (d.draft) draftBanner();
+                console.log('[reddie-live] CMS aktif —', d.draft ? 'PRATINJAU DRAFT' : 'versi terbit',
+                            '· model tersedia:', (d.models || []).length);
                 loadEditor();
             })
             .catch(function () {

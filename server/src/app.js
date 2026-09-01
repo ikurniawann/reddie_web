@@ -7,6 +7,7 @@ import { q } from './db.js';
 import { complete, providerReady, ProviderError } from './providers.js';
 import { fieldSchema, TABLES, ICONS } from './fields.js';
 import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
+import { publishedContent, buildDraft, publish, latestVersion, restoreToDraft, draftStatus } from './content.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -52,23 +53,27 @@ export function buildApp() {
     res.json({ ok: true });
   });
 
-  // Seluruh konten CMS untuk hidrasi landing page
-  app.get('/api/content', async (_req, res) => {
-    const [settings, agents, skills, models] = await Promise.all([
-      q('SELECT key, value FROM settings'),
-      q(`SELECT slug, name, image, description, sort, show_in_dropdown, show_in_carousel
-         FROM agents WHERE enabled ORDER BY sort, id`),
-      q(`SELECT slug, title, subtitle, description, icon, color, button_label
-         FROM skills WHERE enabled ORDER BY sort, id`),
-      q(`SELECT provider, model_id, label, is_default FROM ai_models WHERE enabled ORDER BY sort, id`),
-    ]);
-    res.set('cache-control', 'public, max-age=60');
-    res.json({
-      settings: Object.fromEntries(settings.rows.map(r => [r.key, r.value])),
-      agents: agents.rows,
-      skills: skills.rows,
-      models: models.rows.filter(m => providerReady(m.provider)),
-    });
+  // Seluruh konten CMS untuk hidrasi landing page.
+  // Bawaan: versi TERBIT terakhir. Dengan ?draft=1 + token admin: isi tabel
+  // kerja apa adanya, dipakai pratinjau sebelum diterbitkan.
+  app.get('/api/content', async (req, res) => {
+    const wantDraft = req.query.draft === '1';
+    let draftOk = false;
+    if (wantDraft) {
+      const h = req.headers.authorization || '';
+      const t = h.startsWith('Bearer ') ? h.slice(7) : null;
+      try { if (t) { jwt.verify(t, JWT_SECRET); draftOk = true; } } catch { /* diabaikan */ }
+    }
+
+    const content = draftOk ? await buildDraft() : await publishedContent();
+    // Model dihitung langsung, tidak ikut dipotret: kesiapan provider
+    // bergantung API key di environment, bukan pada isi konten.
+    const models = (await q(
+      'SELECT provider, model_id, label, is_default FROM ai_models WHERE enabled ORDER BY sort, id'
+    )).rows.filter(m => providerReady(m.provider));
+
+    res.set('cache-control', draftOk ? 'no-store' : 'public, max-age=60');
+    res.json({ ...content, models, draft: draftOk });
   });
 
   // Chat multi-provider. Riwayat disimpan & dimuat dari DB (klien tidak dipercaya).
@@ -244,6 +249,41 @@ export function buildApp() {
   admin.delete('/models/:id', async (req, res) => {
     await q('DELETE FROM ai_models WHERE id=$1', [req.params.id]);
     res.json({ ok: true });
+  });
+
+  // ═══════════ TERBIT & RIWAYAT ═══════════
+
+  admin.get('/status', async (_req, res) => res.json(await draftStatus()));
+
+  admin.post('/publish', async (req, res) => {
+    const r = await publish({ note: String(req.body?.note || '').slice(0, 200) || null, by: req.admin?.email });
+    if (!r.published) return res.status(409).json({ error: r.reason });
+    res.status(201).json({ ok: true, version: { id: r.version.id, created_at: r.version.created_at } });
+  });
+
+  admin.get('/versions', async (req, res) => {
+    const limit = Math.min(Number(req.query.limit || 30), 100);
+    res.json((await q(
+      `SELECT id, hash, note, restored_from, published_by, created_at,
+              jsonb_array_length(coalesce(payload->'agents','[]'::jsonb)) AS agents,
+              jsonb_array_length(coalesce(payload->'skills','[]'::jsonb)) AS skills
+       FROM content_versions ORDER BY id DESC LIMIT $1`, [limit])).rows);
+  });
+
+  // Kembalikan: salin payload versi lama ke tabel kerja, lalu terbitkan
+  // sebagai versi BARU. Riwayat tidak pernah dipangkas.
+  admin.post('/versions/:id/restore', async (req, res) => {
+    const v = (await q('SELECT * FROM content_versions WHERE id=$1', [req.params.id])).rows[0];
+    if (!v) return res.status(404).json({ error: 'Versi tidak ditemukan.' });
+    const cur = await latestVersion();
+    if (cur && cur.id === v.id) return res.status(409).json({ error: 'Versi ini sudah menjadi yang tayang sekarang.' });
+    await restoreToDraft(v.payload);
+    const r = await publish({
+      note: `Dikembalikan ke versi #${v.id}`,
+      by: req.admin?.email,
+      restoredFrom: v.id,
+    });
+    res.status(201).json({ ok: true, version: { id: r.version.id }, restored_from: v.id });
   });
 
   // ═══════════ PUSTAKA MEDIA ═══════════
