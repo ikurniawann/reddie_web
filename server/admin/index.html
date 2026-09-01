@@ -5,43 +5,121 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
 <title>Reddie CMS</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
 <style>
-  :root { --red:#ff3333; --bg:#f5f5f7; --card:#fff; --line:#e5e7eb; --txt:#111827; --mut:#6b7280; }
+  :root {
+    --red:#e0242b; --red-soft:#fdecec; --bg:#f6f5f5; --card:#fff;
+    --line:#e5e0e1; --line-2:#cfc8ca; --txt:#191516; --txt-2:#4a4245; --mut:#7a6f72;
+    --ok:#12734f; --ok-soft:#e4f3ec; --warn:#96600b; --warn-soft:#faf0dd;
+  }
   * { box-sizing:border-box; margin:0; }
-  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--txt); }
-  header { background:#111; color:#fff; padding:.8rem 1.2rem; display:flex; justify-content:space-between; align-items:center; }
-  header b { color:var(--red); }
-  main { max-width:1100px; margin:1.2rem auto; padding:0 1rem; }
-  nav.tabs { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
-  nav.tabs button { padding:.5rem .9rem; border:1px solid var(--line); background:var(--card); border-radius:8px; cursor:pointer; font-weight:600; }
+  body { font-family:system-ui,-apple-system,"Segoe UI",sans-serif; background:var(--bg); color:var(--txt-2); font-size:15px; line-height:1.55; }
+  header { background:#111; color:#fff; padding:.8rem 1.2rem; display:flex; justify-content:space-between; align-items:center; gap:1rem; flex-wrap:wrap; }
+  header b { color:#ff4d52; }
+  main { max-width:940px; margin:1.4rem auto 5rem; padding:0 1rem; }
+
+  nav.tabs { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1.2rem; }
+  nav.tabs button { padding:.5rem .9rem; border:1px solid var(--line); background:var(--card); border-radius:8px; cursor:pointer; font:600 .88rem inherit; color:var(--txt-2); }
+  nav.tabs button:hover { border-color:var(--line-2); }
   nav.tabs button.on { background:var(--red); color:#fff; border-color:var(--red); }
-  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem; margin-bottom:1rem; }
+
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1.1rem 1.2rem; margin-bottom:1rem; }
+  .card > h3 { font-size:1rem; color:var(--txt); margin-bottom:.15rem; }
+  .card > .sub { font-size:.82rem; color:var(--mut); margin-bottom:1rem; }
+
+  /* ── field ── */
+  .fld { padding:.85rem 0; border-top:1px solid var(--line); }
+  .fld:first-of-type { border-top:none; padding-top:.2rem; }
+  .fld > label { display:block; font-weight:600; color:var(--txt); font-size:.88rem; margin-bottom:.1rem; }
+  .fld .help { display:block; font-size:.78rem; color:var(--mut); margin-bottom:.45rem; }
+  .fld .row { display:flex; gap:.5rem; align-items:flex-start; }
+  input[type=text], input[type=url], input[type=number], input[type=email], input[type=password], textarea, select {
+    width:100%; padding:.5rem .65rem; border:1px solid var(--line-2); border-radius:8px;
+    font:inherit; font-size:.9rem; color:var(--txt); background:#fff;
+  }
+  input:focus, textarea:focus, select:focus { outline:2px solid var(--red); outline-offset:1px; border-color:var(--red); }
+  textarea { min-height:80px; resize:vertical; line-height:1.5; }
+  textarea.tall { min-height:150px; }
+  .count { font-size:.72rem; color:var(--mut); text-align:right; margin-top:.2rem; font-variant-numeric:tabular-nums; }
+  .count.over { color:#b91c1c; font-weight:600; }
+
+  .toggle { display:flex; align-items:center; gap:.55rem; cursor:pointer; font-size:.88rem; color:var(--txt-2); }
+  .toggle input { width:auto; }
+
+  .imgfield { display:flex; gap:.7rem; align-items:center; }
+  .imgfield img { width:64px; height:64px; object-fit:contain; border:1px solid var(--line); border-radius:8px; background:#fafafa; flex:0 0 auto; }
+  .imgfield .none { width:64px; height:64px; border:1px dashed var(--line-2); border-radius:8px; display:flex; align-items:center; justify-content:center; color:var(--mut); font-size:.7rem; flex:0 0 auto; }
+
+  .iconfield { display:flex; gap:.6rem; align-items:center; }
+  .iconprev { width:40px; height:40px; border:1px solid var(--line); border-radius:8px; display:flex; align-items:center; justify-content:center; font-size:1.1rem; color:var(--red); flex:0 0 auto; }
+
+  .listfield .li { display:flex; gap:.4rem; margin-bottom:.4rem; }
+  .listfield .li button { flex:0 0 auto; }
+
+  button.act { padding:.5rem .95rem; border:none; border-radius:8px; background:var(--red); color:#fff; font:700 .85rem inherit; cursor:pointer; }
+  button.act:hover { filter:brightness(.93); }
+  button.act:disabled { background:#bdb6b8; cursor:default; }
+  button.ghost { background:#fff; color:var(--txt-2); border:1px solid var(--line-2); }
+  button.ghost:hover { border-color:var(--mut); filter:none; }
+  button.sm { padding:.35rem .6rem; font-size:.78rem; }
+  button.danger { background:#fff; color:#b91c1c; border:1px solid #f0c4c4; }
+
+  .foot { display:flex; align-items:center; gap:.7rem; margin-top:1rem; padding-top:.9rem; border-top:1px solid var(--line); }
+  .foot .state { font-size:.8rem; color:var(--mut); flex:1; }
+  .foot .state.dirty { color:var(--warn); font-weight:600; }
+
   table { width:100%; border-collapse:collapse; font-size:.85rem; }
-  th,td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
-  th { color:var(--mut); font-size:.72rem; text-transform:uppercase; }
-  input,textarea,select { width:100%; padding:.45rem .6rem; border:1px solid var(--line); border-radius:8px; font:inherit; }
-  textarea { min-height:90px; font-family:ui-monospace,monospace; font-size:.8rem; }
-  button.act { padding:.45rem .9rem; border:none; border-radius:8px; background:var(--red); color:#fff; font-weight:700; cursor:pointer; }
-  button.ghost { background:transparent; color:var(--mut); border:1px solid var(--line); }
-  .row { display:flex; gap:.6rem; margin:.5rem 0; flex-wrap:wrap; }
-  .row > * { flex:1; min-width:140px; }
-  .muted { color:var(--mut); font-size:.78rem; }
-  .pill { display:inline-block; padding:.1rem .5rem; border-radius:99px; font-size:.7rem; font-weight:700; }
-  .ok { background:#dcfce7; color:#166534; } .no { background:#fee2e2; color:#991b1b; }
-  #login { max-width:360px; margin:12vh auto; }
-  #toast { position:fixed; bottom:1rem; right:1rem; background:#111; color:#fff; padding:.6rem 1rem; border-radius:8px; display:none; }
-  pre.chat { white-space:pre-wrap; font-size:.8rem; background:#f9fafb; padding:.6rem; border-radius:8px; }
+  th,td { text-align:left; padding:.5rem .55rem; border-bottom:1px solid var(--line); vertical-align:middle; }
+  th { color:var(--mut); font-size:.72rem; text-transform:uppercase; letter-spacing:.05em; }
+  .pill { display:inline-block; padding:.12rem .5rem; border-radius:99px; font-size:.7rem; font-weight:700; }
+  .ok { background:var(--ok-soft); color:var(--ok); } .no { background:#fdecec; color:#b91c1c; }
+  .muted { color:var(--mut); font-size:.82rem; }
+
+  #login { max-width:370px; margin:11vh auto; }
+  #toast { position:fixed; bottom:1.1rem; right:1.1rem; background:#111; color:#fff; padding:.6rem 1rem; border-radius:8px; display:none; z-index:200; font-size:.86rem; max-width:min(420px,90vw); }
+  #toast.bad { background:#b91c1c; }
+  pre.chat { white-space:pre-wrap; font-size:.8rem; background:#faf9f9; border:1px solid var(--line); padding:.6rem; border-radius:8px; margin-bottom:.4rem; }
+
+  /* ── modal ── */
+  .modal { position:fixed; inset:0; background:rgba(0,0,0,.55); z-index:300; display:flex; align-items:center; justify-content:center; padding:1.5rem; }
+  .modal-box { background:#fff; border-radius:14px; width:min(760px,100%); max-height:84vh; display:flex; flex-direction:column; overflow:hidden; }
+  .modal-head { padding:1rem 1.2rem; border-bottom:1px solid var(--line); display:flex; justify-content:space-between; align-items:flex-start; gap:1rem; }
+  .modal-head b { font-size:1rem; color:var(--txt); }
+  .modal-body { padding:1.1rem 1.2rem; overflow-y:auto; }
+  .modal-foot { padding:.8rem 1.2rem; border-top:1px solid var(--line); display:flex; justify-content:flex-end; gap:.5rem; align-items:center; }
+  .modal-foot .msg { flex:1; font-size:.8rem; color:var(--mut); }
+  .modal-foot .msg.bad { color:#b91c1c; }
+
+  .grid { display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:.7rem; }
+  .tile { border:2px solid var(--line); border-radius:10px; padding:.4rem; cursor:pointer; background:#fff; text-align:center; }
+  .tile:hover { border-color:var(--red); }
+  .tile.on { border-color:var(--red); background:var(--red-soft); }
+  .tile img { width:100%; height:78px; object-fit:contain; display:block; }
+  .tile .nm { font-size:.66rem; color:var(--mut); margin-top:.3rem; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .tile .del { margin-top:.3rem; }
+  .icongrid { display:grid; grid-template-columns:repeat(auto-fill,minmax(58px,1fr)); gap:.45rem; }
+  .icontile { border:2px solid var(--line); border-radius:8px; padding:.55rem 0; cursor:pointer; background:#fff; font-size:1.15rem; color:var(--txt-2); }
+  .icontile:hover, .icontile.on { border-color:var(--red); color:var(--red); background:var(--red-soft); }
+  .drop { margin-top:1rem; border:2px dashed var(--line-2); border-radius:10px; padding:1.2rem; text-align:center; color:var(--mut); font-size:.85rem; cursor:pointer; }
+  .drop.hot { border-color:var(--red); background:var(--red-soft); color:var(--red); }
 </style>
 </head>
 <body>
-<header><div><b>REDDIE</b> CMS</div><div style="display:flex;gap:.5rem"><a href="../../?edit=1" class="ghost act" id="visualBtn" style="display:none;text-decoration:none;padding:.45rem .9rem;border-radius:8px;border:1px solid #444;color:#fff;font-weight:700;font-size:.85rem">&#128396; Edit Visual</a><button class="ghost act" id="logoutBtn" style="display:none">Keluar</button></div></header>
+<header>
+  <div><b>REDDIE</b> CMS</div>
+  <div style="display:flex;gap:.5rem">
+    <a href="#" class="act ghost" id="visualBtn" style="display:none;text-decoration:none;padding:.5rem .95rem;border-radius:8px;font-weight:700;font-size:.85rem">&#128396; Edit Visual</a>
+    <button class="act ghost" id="logoutBtn" style="display:none">Keluar</button>
+  </div>
+</header>
+
 <main>
   <div id="login" class="card">
-    <h3 style="margin-bottom:.8rem">Masuk Admin</h3>
-    <div class="row"><input id="lEmail" type="email" placeholder="Email"></div>
-    <div class="row"><input id="lPass" type="password" placeholder="Password"></div>
-    <button class="act" id="loginBtn" style="width:100%">Masuk</button>
-    <p class="muted" id="lErr" style="margin-top:.5rem"></p>
+    <h3>Masuk</h3>
+    <p class="sub">Gunakan akun admin Reddie.</p>
+    <div class="fld"><label for="lEmail">Email</label><input id="lEmail" type="email" autocomplete="username"></div>
+    <div class="fld"><label for="lPass">Kata sandi</label><input id="lPass" type="password" autocomplete="current-password"></div>
+    <div class="foot"><span class="state" id="lErr"></span><button class="act" id="loginBtn">Masuk</button></div>
   </div>
 
   <div id="panel" style="display:none">
@@ -49,141 +127,462 @@
     <div id="content"></div>
   </div>
 </main>
+
 <div id="toast"></div>
+
 <script>
 'use strict';
 const $ = s => document.querySelector(s);
+// Akar situs dihitung dari URL, bukan ditebak lewat '../..' yang hasilnya
+// berbeda tergantung ada tidaknya garis miring di akhir alamat.
+const ROOT = location.pathname.replace(/api\/admin\/?$/, '');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+
 const api = (p, opt = {}) => fetch('../api' + p, {
   ...opt,
   headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (localStorage.getItem('tok') || ''), ...(opt.headers || {}) },
 }).then(async r => {
-  if (r.status === 401 && p !== '/auth/login') { logout(); throw new Error('Sesi berakhir, silakan masuk lagi'); }
   const d = await r.json().catch(() => ({}));
-  if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+  if (r.status === 401 && p !== '/auth/login') { logout(); throw new Error('Sesi berakhir, silakan masuk lagi.'); }
+  if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
   return d;
 });
-const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
-function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2200); }
-function logout() { localStorage.removeItem('tok'); $('#panel').style.display = 'none'; $('#login').style.display = 'block'; $('#logoutBtn').style.display = 'none'; }
-
-const TABS = [
-  ['settings', 'Pengaturan'], ['agents', 'Agents'], ['skills', 'Skills'],
-  ['models', 'Model AI'], ['leads', 'Leads'], ['chats', 'Riwayat Chat'],
-];
-let cur = 'settings';
-
-async function show(tab) {
-  cur = tab;
-  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
-  const c = $('#content'); c.innerHTML = '<div class="card muted">Memuat…</div>';
-  try { await ({ settings, agents, skills, models, leads, chats })[tab](c); }
-  catch (e) { c.innerHTML = '<div class="card">⚠ ' + esc(e.message) + '</div>'; }
+function logout() { localStorage.removeItem('tok'); location.reload(); }
+function toast(m, bad) {
+  const t = $('#toast'); t.textContent = m; t.className = bad ? 'bad' : '';
+  t.style.display = 'block'; clearTimeout(t._x);
+  t._x = setTimeout(() => t.style.display = 'none', bad ? 5200 : 2400);
 }
 
-async function settings(c) {
-  const s = await api('/admin/settings');
-  c.innerHTML = Object.entries(s).map(([k, v]) => `
-    <div class="card"><b>${esc(k)}</b>
-      <div class="row"><textarea data-k="${esc(k)}">${esc(JSON.stringify(v, null, 2))}</textarea></div>
-      <button class="act" data-save="${esc(k)}">Simpan ${esc(k)}</button>
+let SCHEMA = { groups:{}, fields:{}, tables:{}, icons:[] };
+let MEDIA = null;
+const loadMedia = force => (MEDIA && !force) ? Promise.resolve(MEDIA)
+  : api('/admin/media').then(r => (MEDIA = r));
+
+// ═══════════════ PEMILIH GAMBAR ═══════════════
+function pickImage(current, onPick) {
+  const ov = document.createElement('div');
+  ov.className = 'modal';
+  ov.innerHTML = `<div class="modal-box">
+    <div class="modal-head"><div><b>Pilih gambar</b>
+      <div class="muted">Klik salah satu untuk memakainya. Gambar besar otomatis dikecilkan dan dibersihkan dari data lokasi.</div></div>
+      <button class="act ghost sm" data-x>Tutup</button></div>
+    <div class="modal-body"><div class="grid" data-grid><p class="muted">Memuat…</p></div>
+      <div class="drop" data-drop>Seret gambar ke sini, atau <u>pilih dari komputer</u>
+        <div class="muted" style="margin-top:.2rem">PNG, JPG, WebP, GIF &middot; maksimal 8 MB</div></div></div>
+    <div class="modal-foot"><span class="msg" data-msg></span>
+      <button class="act ghost sm" data-clear>Kosongkan</button>
+      <button class="act ghost sm" data-x>Batal</button></div></div>`;
+  document.body.appendChild(ov);
+  const grid = ov.querySelector('[data-grid]'), drop = ov.querySelector('[data-drop]'), msg = ov.querySelector('[data-msg]');
+  const fileInput = Object.assign(document.createElement('input'), { type:'file', accept:'image/*', multiple:true });
+  const close = () => ov.remove();
+  ov.querySelectorAll('[data-x]').forEach(b => b.onclick = close);
+  ov.querySelector('[data-clear]').onclick = () => { onPick(''); close(); };
+  ov.onclick = e => { if (e.target === ov) close(); };
+  const say = (t, bad) => { msg.textContent = t || ''; msg.className = 'msg' + (bad ? ' bad' : ''); };
+
+  function render(rows) {
+    if (!rows.length) { grid.innerHTML = '<p class="muted">Belum ada gambar. Unggah yang pertama di bawah.</p>'; return; }
+    grid.innerHTML = rows.map(m => `<div class="tile${m.path === current ? ' on' : ''}">
+      <img src="${ROOT}${esc(m.path)}" alt="" loading="lazy" data-p="${esc(m.path)}">
+      <div class="nm" title="${esc(m.filename)}">${esc(m.filename)}</div>
+      ${m.source === 'upload' ? `<button class="act ghost sm danger del" data-del="${m.id}">Hapus</button>` : ''}
     </div>`).join('');
-  c.querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
-    const k = b.dataset.save, ta = c.querySelector(`textarea[data-k="${k}"]`);
-    let val; try { val = JSON.parse(ta.value); } catch { return toast('JSON tidak valid'); }
-    await api('/admin/settings/' + k, { method: 'PUT', body: JSON.stringify(val) });
-    toast('Tersimpan: ' + k);
+    grid.querySelectorAll('img[data-p]').forEach(i => i.onclick = () => { onPick(i.dataset.p); close(); });
+    grid.querySelectorAll('[data-del]').forEach(b => b.onclick = async e => {
+      e.stopPropagation();
+      if (!confirm('Hapus gambar ini secara permanen?')) return;
+      try { await api('/admin/media/' + b.dataset.del, { method:'DELETE' }); say('Terhapus.'); render(await loadMedia(true)); }
+      catch (err) { say(err.message, true); }
+    });
+  }
+  loadMedia().then(render).catch(e => { grid.innerHTML = `<p class="muted">Gagal memuat: ${esc(e.message)}</p>`; });
+
+  function upload(files) {
+    if (!files || !files.length) return;
+    say('Mengunggah ' + files.length + ' berkas…');
+    [...files].reduce((chain, f) => chain.then(async () => {
+      if (!/^image\//.test(f.type)) throw new Error(`"${f.name}" bukan berkas gambar.`);
+      const r = await fetch('../api/admin/media', {
+        method:'POST',
+        headers:{ 'content-type': f.type, 'x-filename': encodeURIComponent(f.name),
+                  authorization:'Bearer ' + localStorage.getItem('tok') },
+        body: await f.arrayBuffer(),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Unggahan gagal.');
+    }), Promise.resolve())
+      .then(() => loadMedia(true)).then(rows => { render(rows); say('Selesai. Klik gambar untuk memakainya.'); })
+      .catch(e => say(e.message, true));
+  }
+  drop.onclick = () => fileInput.click();
+  fileInput.onchange = () => { upload(fileInput.files); fileInput.value = ''; };
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('hot'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('hot'); }));
+  drop.addEventListener('drop', e => upload(e.dataTransfer.files));
+}
+
+// ═══════════════ PEMILIH IKON ═══════════════
+function pickIcon(current, onPick) {
+  const ov = document.createElement('div');
+  ov.className = 'modal';
+  ov.innerHTML = `<div class="modal-box"><div class="modal-head"><div><b>Pilih ikon</b>
+      <div class="muted">Ikon muncul di pojok kiri atas kartu.</div></div>
+      <button class="act ghost sm" data-x>Tutup</button></div>
+    <div class="modal-body"><div class="icongrid">${SCHEMA.icons.map(i =>
+      `<button class="icontile${i === current ? ' on' : ''}" data-i="${esc(i)}" title="${esc(i)}"><i class="fa-solid ${esc(i)}"></i></button>`).join('')}</div></div></div>`;
+  document.body.appendChild(ov);
+  const close = () => ov.remove();
+  ov.querySelectorAll('[data-x]').forEach(b => b.onclick = close);
+  ov.onclick = e => { if (e.target === ov) close(); };
+  ov.querySelectorAll('[data-i]').forEach(b => b.onclick = () => { onPick(b.dataset.i); close(); });
+}
+
+// ═══════════════ RENDER SATU FIELD ═══════════════
+// Satu tempat yang menerjemahkan "jenis field" jadi kontrol yang tepat,
+// sehingga editor tidak pernah melihat JSON, path berkas, atau kode warna.
+function fieldHTML(id, meta, value) {
+  const t = meta.type || 'text';
+  const v = value ?? '';
+  const counter = meta.max && ['text','textarea','html','prompt','url'].includes(t)
+    ? `<div class="count" data-count-for="${id}"></div>` : '';
+  let ctrl;
+  switch (t) {
+    case 'bool':
+      ctrl = `<label class="toggle"><input type="checkbox" id="${id}" ${v ? 'checked' : ''}> <span>Ya</span></label>`; break;
+    case 'int':
+      ctrl = `<input type="number" id="${id}" value="${esc(v)}" style="max-width:130px">`; break;
+    case 'url':
+      ctrl = `<input type="url" id="${id}" value="${esc(v)}" placeholder="https://…">`; break;
+    case 'color':
+      ctrl = `<div class="row"><input type="color" id="${id}" value="${esc(v || '#e0242b')}" style="width:52px;height:38px;padding:2px">
+              <input type="text" id="${id}__hex" value="${esc(v)}" placeholder="#ef4444" style="max-width:130px"></div>`; break;
+    case 'icon':
+      ctrl = `<div class="iconfield"><span class="iconprev" data-prev-for="${id}"><i class="fa-solid ${esc(v || 'fa-bolt')}"></i></span>
+              <button class="act ghost sm" data-pick-icon="${id}">Pilih ikon</button>
+              <input type="hidden" id="${id}" value="${esc(v)}"></div>`; break;
+    case 'image':
+      ctrl = `<div class="imgfield">${v
+                ? `<img src="${ROOT}${esc(v)}" alt="" data-prev-for="${id}">`
+                : `<span class="none" data-prev-for="${id}">kosong</span>`}
+              <div><button class="act ghost sm" data-pick-img="${id}">Pilih gambar…</button>
+              <div class="muted" data-name-for="${id}" style="margin-top:.25rem">${v ? esc(v) : 'belum ada gambar'}</div></div>
+              <input type="hidden" id="${id}" value="${esc(v)}"></div>`; break;
+    case 'list':
+      ctrl = `<div class="listfield" id="${id}">
+              ${(Array.isArray(v) ? v : []).map(x => listRow(x)).join('')}
+              <button class="act ghost sm" data-add-li>+ Tambah</button></div>`; break;
+    case 'textarea': case 'html':
+      ctrl = `<textarea id="${id}">${esc(v)}</textarea>`; break;
+    case 'prompt':
+      ctrl = `<textarea id="${id}" class="tall">${esc(v)}</textarea>`; break;
+    case 'slug':
+      ctrl = `<input type="text" id="${id}" value="${esc(v)}" style="font-family:ui-monospace,monospace">`; break;
+    default:
+      ctrl = `<input type="text" id="${id}" value="${esc(v)}">`;
+  }
+  return `<div class="fld">
+    <label for="${id}">${esc(meta.label || id)}</label>
+    ${meta.help ? `<span class="help">${esc(meta.help)}</span>` : ''}
+    ${ctrl}${counter}</div>`;
+}
+const listRow = v => `<div class="li"><input type="text" value="${esc(v)}"><button class="act ghost sm" data-rm-li>&times;</button></div>`;
+
+function readField(id, meta) {
+  const t = meta.type || 'text';
+  if (t === 'list') {
+    return [...document.querySelectorAll(`#${CSS.escape(id)} .li input`)].map(i => i.value.trim()).filter(Boolean);
+  }
+  const el = document.getElementById(id);
+  if (!el) return undefined;
+  if (t === 'bool') return el.checked;
+  if (t === 'int') return el.value === '' ? 0 : Number(el.value);
+  const s = el.value.trim();
+  return s === '' ? null : s;
+}
+
+// Pasang perilaku interaktif setelah HTML field tertanam di DOM
+function wireFields(root, metaOf) {
+  root.querySelectorAll('[data-pick-img]').forEach(b => b.onclick = () => {
+    const id = b.dataset.pickImg, hid = document.getElementById(id);
+    pickImage(hid.value, p => {
+      hid.value = p;
+      const prev = root.querySelector(`[data-prev-for="${id}"]`);
+      const nm = root.querySelector(`[data-name-for="${id}"]`);
+      if (prev) prev.outerHTML = p ? `<img src="${ROOT}${esc(p)}" alt="" data-prev-for="${id}">`
+                                   : `<span class="none" data-prev-for="${id}">kosong</span>`;
+      if (nm) nm.textContent = p || 'belum ada gambar';
+    });
+  });
+  root.querySelectorAll('[data-pick-icon]').forEach(b => b.onclick = () => {
+    const id = b.dataset.pickIcon, hid = document.getElementById(id);
+    pickIcon(hid.value, ic => {
+      hid.value = ic;
+      const prev = root.querySelector(`[data-prev-for="${id}"]`);
+      if (prev) prev.innerHTML = `<i class="fa-solid ${esc(ic)}"></i>`;
+    });
+  });
+  root.querySelectorAll('input[type=color]').forEach(c => {
+    const hex = document.getElementById(c.id + '__hex');
+    if (!hex) return;
+    c.oninput = () => { hex.value = c.value; };
+    hex.oninput = () => { if (/^#[0-9a-f]{6}$/i.test(hex.value)) c.value = hex.value; };
+  });
+  root.querySelectorAll('.listfield').forEach(lf => {
+    lf.querySelector('[data-add-li]').onclick = () => {
+      lf.querySelector('[data-add-li]').insertAdjacentHTML('beforebegin', listRow(''));
+      wireListRemove(lf);
+      lf.querySelectorAll('.li input')[lf.querySelectorAll('.li input').length - 1].focus();
+    };
+    wireListRemove(lf);
+  });
+  // penghitung karakter
+  root.querySelectorAll('[data-count-for]').forEach(c => {
+    const el = document.getElementById(c.dataset.countFor);
+    const meta = metaOf(c.dataset.countFor);
+    if (!el || !meta || !meta.max) return;
+    const upd = () => {
+      const n = el.value.length;
+      c.textContent = n + ' / ' + meta.max;
+      c.className = 'count' + (n > meta.max ? ' over' : '');
+    };
+    el.addEventListener('input', upd); upd();
+  });
+}
+function wireListRemove(lf) {
+  lf.querySelectorAll('[data-rm-li]').forEach(b => b.onclick = () => b.parentElement.remove());
+}
+
+// ═══════════════ TAB: KONTEN SITUS ═══════════════
+async function settings(c) {
+  const values = await api('/admin/settings');
+  const byGroup = {};
+  for (const [key, meta] of Object.entries(SCHEMA.fields)) {
+    const [g, f] = key.split('.');
+    (byGroup[g] ||= []).push({ key, field: f, meta });
+  }
+  c.innerHTML = `<p class="muted" style="margin-bottom:1rem">
+    Semua tulisan yang terlihat pengunjung ada di sini, dikelompokkan menurut letaknya di halaman.
+    Perubahan langsung tayang setelah disimpan.</p>` +
+    Object.entries(byGroup).map(([g, list]) => `<div class="card" data-group="${esc(g)}">
+      <h3>${esc(SCHEMA.groups[g] || g)}</h3>
+      <p class="sub">${list.length} pengaturan</p>
+      ${list.map(x => fieldHTML('f_' + g + '_' + x.field, x.meta, (values[g] || {})[x.field])).join('')}
+      <div class="foot"><span class="state" data-state>Belum ada perubahan</span>
+        <button class="act" data-save="${esc(g)}">Simpan</button></div></div>`).join('');
+
+  wireFields(c, id => {
+    const g = id.slice(2).split('_')[0];
+    const f = id.slice(2 + g.length + 1);
+    return SCHEMA.fields[g + '.' + f];
+  });
+
+  c.querySelectorAll('[data-group]').forEach(card => {
+    const g = card.dataset.group, state = card.querySelector('[data-state]');
+    card.addEventListener('input', () => { state.textContent = 'Ada perubahan belum disimpan'; state.className = 'state dirty'; });
+    card.querySelector('[data-save]').onclick = async e => {
+      const btn = e.currentTarget; btn.disabled = true; btn.textContent = 'Menyimpan…';
+      try {
+        const body = {}; const over = [];
+        for (const x of byGroup[g]) {
+          const id = 'f_' + g + '_' + x.field;
+          const v = readField(id, x.meta);
+          if (v === undefined) continue;
+          if (x.meta.max && typeof v === 'string' && v.length > x.meta.max) {
+            over.push(`${x.meta.label}: maksimal ${x.meta.max} karakter, sekarang ${v.length}`);
+          }
+          body[x.field] = v;
+        }
+        if (over.length) throw new Error(over.join(' · '));
+        await api('/admin/settings/' + g, { method:'PUT', body: JSON.stringify(body) });
+        state.textContent = 'Tersimpan'; state.className = 'state';
+        toast('Tersimpan — perubahan tayang dalam 1 menit.');
+      } catch (err) { toast(err.message, true); }
+      finally { btn.disabled = false; btn.textContent = 'Simpan'; }
+    };
   });
 }
 
-function crudTable(c, res, cols, labels, renderExtra) {
-  return api('/admin/' + res).then(rows => {
-    c.innerHTML = `<div class="card">
-      <table><thead><tr>${labels.map(l => '<th>' + esc(l) + '</th>').join('')}<th></th></tr></thead>
-      <tbody>${rows.map(r => `<tr>${cols.map(k => '<td>' + esc(String(r[k] ?? '')).slice(0, 60) + '</td>').join('')}
-        <td><button class="ghost act" data-e="${r.id}">Edit</button> <button class="ghost act" data-d="${r.id}">Hapus</button></td></tr>`).join('')}
-      </tbody></table>
-      <div style="margin-top:.7rem"><button class="act" data-new>+ Tambah</button></div>
-      <div id="form"></div></div>`;
+// ═══════════════ TAB: TABEL (agents / skills) ═══════════════
+function tableTab(res) {
+  return async function (c) {
+    const spec = SCHEMA.tables[res];
+    const rows = await api('/admin/' + res);
+    const main = spec.columns[0].name;
+    c.innerHTML = `<div class="card"><h3>${esc(spec.label)}</h3><p class="sub">${esc(spec.help || '')}</p>
+      <table><thead><tr><th>${esc(spec.columns[0].label)}</th><th>Kode</th><th>Aktif</th><th></th></tr></thead>
+      <tbody>${rows.map(r => `<tr><td><b>${esc(r[main])}</b></td><td class="muted">${esc(r.slug)}</td>
+        <td><span class="pill ${r.enabled ? 'ok' : 'no'}">${r.enabled ? 'aktif' : 'nonaktif'}</span></td>
+        <td style="text-align:right"><button class="act ghost sm" data-e="${r.id}">Ubah</button>
+        <button class="act ghost sm danger" data-d="${r.id}">Hapus</button></td></tr>`).join('')}</tbody></table>
+      <div class="foot"><span class="state">${rows.length} item</span><button class="act" data-new>+ Tambah baru</button></div></div>
+      <div id="form"></div>`;
+
     const openForm = (row = {}) => {
-      $('#form').innerHTML = `<hr style="margin:1rem 0;border:none;border-top:1px solid var(--line)">
-        ${cols.map(k => `<div class="row"><label style="flex:0 0 130px" class="muted">${esc(k)}</label>
-          ${k.length > 12 || ['description', 'system_prompt', 'message'].includes(k)
-            ? `<textarea data-f="${k}">${esc(row[k] ?? '')}</textarea>`
-            : `<input data-f="${k}" value="${esc(row[k] ?? '')}">`}</div>`).join('')}
-        <button class="act" data-submit>${row.id ? 'Perbarui' : 'Buat'}</button>`;
-      $('#form [data-submit]').onclick = async () => {
-        const body = {};
-        $('#form').querySelectorAll('[data-f]').forEach(i => {
-          let v = i.value;
-          if (v === 'true') v = true; else if (v === 'false') v = false;
-          else if (v !== '' && !isNaN(v) && ['sort', 'id'].includes(i.dataset.f)) v = Number(v);
-          body[i.dataset.f] = v === '' ? null : v;
-        });
-        await api('/admin/' + res + (row.id ? '/' + row.id : ''), { method: row.id ? 'PUT' : 'POST', body: JSON.stringify(body) });
-        toast('Tersimpan'); show(cur);
+      const f = $('#form');
+      f.innerHTML = `<div class="card"><h3>${row.id ? 'Ubah' : 'Tambah'} ${esc(spec.label.toLowerCase())}</h3>
+        <p class="sub">${row.id ? esc(row[main] || '') : 'Isi data di bawah, lalu simpan.'}</p>
+        ${spec.columns.map(col => fieldHTML('t_' + col.name, col, row[col.name])).join('')}
+        <div class="foot"><span class="state"></span>
+          <button class="act ghost" data-cancel>Batal</button>
+          <button class="act" data-submit>${row.id ? 'Simpan perubahan' : 'Buat'}</button></div></div>`;
+      wireFields(f, id => spec.columns.find(x => 't_' + x.name === id));
+      f.scrollIntoView({ behavior:'smooth', block:'start' });
+      f.querySelector('[data-cancel]').onclick = () => { f.innerHTML = ''; };
+      f.querySelector('[data-submit]').onclick = async e => {
+        const btn = e.currentTarget; btn.disabled = true;
+        try {
+          const body = {}; const over = [];
+          for (const col of spec.columns) {
+            const v = readField('t_' + col.name, col);
+            if (v === undefined) continue;
+            if (col.max && typeof v === 'string' && v.length > col.max) {
+              over.push(`${col.label}: maksimal ${col.max} karakter, sekarang ${v.length}`);
+            }
+            body[col.name] = v;
+          }
+          if (over.length) throw new Error(over.join(' · '));
+          await api('/admin/' + res + (row.id ? '/' + row.id : ''), {
+            method: row.id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+          toast('Tersimpan'); show(cur);
+        } catch (err) { toast(err.message, true); btn.disabled = false; }
       };
     };
     c.querySelector('[data-new]').onclick = () => openForm();
     c.querySelectorAll('[data-e]').forEach(b => b.onclick = () => openForm(rows.find(r => r.id == b.dataset.e)));
     c.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => {
-      if (!confirm('Hapus item ini?')) return;
-      await api('/admin/' + res + '/' + b.dataset.d, { method: 'DELETE' }); toast('Terhapus'); show(cur);
+      const row = rows.find(r => r.id == b.dataset.d);
+      if (!confirm(`Hapus "${row[main]}" secara permanen?\n\nNonaktifkan saja bila hanya ingin menyembunyikannya.`)) return;
+      try { await api('/admin/' + res + '/' + b.dataset.d, { method:'DELETE' }); toast('Terhapus'); show(cur); }
+      catch (e) { toast(e.message, true); }
     });
-    if (renderExtra) renderExtra(rows);
+  };
+}
+
+// ═══════════════ TAB: GALERI ═══════════════
+async function media(c) {
+  const rows = await loadMedia(true);
+  const up = rows.filter(r => r.source === 'upload'), bundled = rows.filter(r => r.source === 'bundled');
+  const tiles = list => list.length
+    ? `<div class="grid">${list.map(m => `<div class="tile"><img src="${ROOT}${esc(m.path)}" alt="" loading="lazy">
+        <div class="nm" title="${esc(m.filename)}">${esc(m.filename)}</div>
+        <div class="muted" style="font-size:.66rem">${m.width || '?'}&times;${m.height || '?'}</div>
+        ${m.source === 'upload' ? `<button class="act ghost sm danger del" data-del="${m.id}">Hapus</button>` : ''}
+      </div>`).join('')}</div>`
+    : '<p class="muted">Belum ada.</p>';
+  c.innerHTML = `<div class="card"><h3>Gambar unggahan</h3>
+      <p class="sub">Gambar besar otomatis dikecilkan ke maksimal 1600 piksel dan dibersihkan dari data lokasi.</p>
+      ${tiles(up)}
+      <div class="drop" data-drop>Seret gambar ke sini, atau <u>pilih dari komputer</u>
+        <div class="muted" style="margin-top:.2rem">PNG, JPG, WebP, GIF &middot; maksimal 8 MB</div></div></div>
+    <div class="card"><h3>Gambar bawaan</h3>
+      <p class="sub">Ikut bersama kode program. Bisa dipakai, tapi tidak bisa dihapus dari sini.</p>${tiles(bundled)}</div>`;
+
+  const drop = c.querySelector('[data-drop]');
+  const fileInput = Object.assign(document.createElement('input'), { type:'file', accept:'image/*', multiple:true });
+  const upload = files => {
+    if (!files || !files.length) return;
+    toast('Mengunggah…');
+    [...files].reduce((chain, f) => chain.then(async () => {
+      if (!/^image\//.test(f.type)) throw new Error(`"${f.name}" bukan berkas gambar.`);
+      const r = await fetch('../api/admin/media', {
+        method:'POST',
+        headers:{ 'content-type': f.type, 'x-filename': encodeURIComponent(f.name),
+                  authorization:'Bearer ' + localStorage.getItem('tok') },
+        body: await f.arrayBuffer(),
+      });
+      const d = await r.json().catch(() => ({}));
+      if (!r.ok) throw new Error(d.error || 'Unggahan gagal.');
+    }), Promise.resolve()).then(() => { toast('Selesai'); show('media'); }).catch(e => toast(e.message, true));
+  };
+  drop.onclick = () => fileInput.click();
+  fileInput.onchange = () => { upload(fileInput.files); fileInput.value = ''; };
+  ['dragenter','dragover'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.add('hot'); }));
+  ['dragleave','drop'].forEach(ev => drop.addEventListener(ev, e => { e.preventDefault(); drop.classList.remove('hot'); }));
+  drop.addEventListener('drop', e => upload(e.dataTransfer.files));
+  c.querySelectorAll('[data-del]').forEach(b => b.onclick = async () => {
+    if (!confirm('Hapus gambar ini secara permanen?')) return;
+    try { await api('/admin/media/' + b.dataset.del, { method:'DELETE' }); toast('Terhapus'); show('media'); }
+    catch (e) { toast(e.message, true); }
   });
 }
-const agents = c => crudTable(c, 'agents',
-  ['slug','name','image','description','system_prompt','sort','show_in_dropdown','show_in_carousel','enabled'],
-  ['Slug','Nama','Gambar','Deskripsi','System Prompt','Urut','Dropdown','Carousel','Aktif']);
-const skills = c => crudTable(c, 'skills',
-  ['slug','title','subtitle','description','icon','color','button_label','sort','enabled'],
-  ['Slug','Judul','Subjudul','Deskripsi','Ikon','Warna','Label Tombol','Urut','Aktif']);
+
+// ═══════════════ TAB TEKNIS (model / lead / chat) ═══════════════
 async function models(c) {
-  await crudTable(c, 'models',
-    ['provider','model_id','label','enabled','is_default','sort'],
-    ['Provider','Model ID','Label','Aktif','Default','Urut'],
-    rows => {
-      const info = rows.map(r => `<span class="pill ${r.provider_ready ? 'ok' : 'no'}">${esc(r.provider)}: ${r.provider_ready ? 'key OK' : 'key kosong'}</span>`);
-      c.querySelector('.card').insertAdjacentHTML('afterbegin',
-        `<p class="muted" style="margin-bottom:.6rem">Status API key (dari env server): ${[...new Set(info)].join(' ')}</p>`);
-    });
+  const rows = await api('/admin/models');
+  const info = [...new Set(rows.map(r => `<span class="pill ${r.provider_ready ? 'ok':'no'}">${esc(r.provider)}: ${r.provider_ready ? 'key terisi':'key kosong'}</span>`))];
+  c.innerHTML = `<div class="card"><h3>Model AI</h3>
+    <p class="sub">Model yang provider-nya tanpa API key otomatis disembunyikan dari pengunjung.</p>
+    <p style="margin-bottom:.8rem">${info.join(' ')}</p>
+    <table><thead><tr><th>Label</th><th>Provider</th><th>Model</th><th>Status</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td><b>${esc(r.label)}</b>${r.is_default ? ' <span class="pill ok">bawaan</span>' : ''}</td>
+      <td>${esc(r.provider)}</td><td class="muted">${esc(r.model_id)}</td>
+      <td><span class="pill ${r.enabled && r.provider_ready ? 'ok':'no'}">${r.enabled ? (r.provider_ready ? 'tayang':'key kosong') : 'nonaktif'}</span></td></tr>`).join('')}
+    </tbody></table></div>`;
 }
 async function leads(c) {
   const rows = await api('/admin/leads');
-  c.innerHTML = `<div class="card"><table><thead><tr><th>Waktu</th><th>Sumber</th><th>Nama</th><th>Email</th><th>Pesan</th></tr></thead>
-    <tbody>${rows.map(r => `<tr><td>${esc((r.created_at || '').slice(0, 16).replace('T', ' '))}</td>
+  c.innerHTML = `<div class="card"><h3>Pesan masuk</h3><p class="sub">Dari formulir kontak dan jendela masuk.</p>
+    <table><thead><tr><th>Waktu</th><th>Sumber</th><th>Nama</th><th>Email</th><th>Pesan</th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${esc((r.created_at||'').slice(0,16).replace('T',' '))}</td>
       <td><span class="pill ok">${esc(r.source)}</span></td><td>${esc(r.name)}</td><td>${esc(r.email)}</td>
-      <td>${esc(String(r.message ?? '')).slice(0, 120)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada lead</td></tr>'}
+      <td>${esc(String(r.message ?? '')).slice(0,120)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada.</td></tr>'}
     </tbody></table></div>`;
 }
 async function chats(c) {
   const rows = await api('/admin/chats');
-  c.innerHTML = `<div class="card"><table><thead><tr><th>Waktu</th><th>Agent</th><th>Model</th><th>Pesan</th><th></th></tr></thead>
-    <tbody>${rows.map(r => `<tr><td>${esc((r.created_at || '').slice(0, 16).replace('T', ' '))}</td>
-      <td>${esc(r.agent_slug)}</td><td>${esc(r.model_id)}</td><td>${r.messages}</td>
-      <td><button class="ghost act" data-v="${r.id}">Lihat</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada sesi</td></tr>'}
+  c.innerHTML = `<div class="card"><h3>Riwayat percakapan</h3><p class="sub">Sesi chat pengunjung dengan agent.</p>
+    <table><thead><tr><th>Waktu</th><th>Agent</th><th>Model</th><th>Pesan</th><th></th></tr></thead><tbody>
+    ${rows.map(r => `<tr><td>${esc((r.created_at||'').slice(0,16).replace('T',' '))}</td><td>${esc(r.agent_slug)}</td>
+      <td class="muted">${esc(r.model_id)}</td><td>${r.messages}</td>
+      <td style="text-align:right"><button class="act ghost sm" data-v="${r.id}">Lihat</button></td></tr>`).join('')
+      || '<tr><td colspan="5" class="muted">Belum ada.</td></tr>'}
     </tbody></table><div id="detail"></div></div>`;
   c.querySelectorAll('[data-v]').forEach(b => b.onclick = async () => {
     const d = await api('/admin/chats/' + b.dataset.v);
-    $('#detail').innerHTML = '<hr style="margin:1rem 0;border:none;border-top:1px solid var(--line)">' +
-      d.messages.map(m => `<pre class="chat"><b>${esc(m.role)}:</b> ${esc(m.content)}</pre>`).join('');
+    $('#detail').innerHTML = '<div style="margin-top:1rem;padding-top:1rem;border-top:1px solid var(--line)">' +
+      d.messages.map(m => `<pre class="chat"><b>${esc(m.role)}:</b> ${esc(m.content)}</pre>`).join('') + '</div>';
   });
+}
+
+// ═══════════════ NAVIGASI ═══════════════
+const TABS = [
+  ['settings', 'Konten situs',  settings],
+  ['agents',   'Agent AI',      tableTab('agents')],
+  ['skills',   'Kartu kemampuan', tableTab('skills')],
+  ['media',    'Galeri gambar', media],
+  ['models',   'Model AI',      models],
+  ['leads',    'Pesan masuk',   leads],
+  ['chats',    'Riwayat chat',  chats],
+];
+let cur = 'settings';
+async function show(t) {
+  cur = t;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === t));
+  const c = $('#content'); c.innerHTML = '<div class="card muted">Memuat…</div>';
+  const fn = (TABS.find(x => x[0] === t) || [])[2];
+  try { await fn(c); }
+  catch (e) { c.innerHTML = `<div class="card"><h3>Gagal memuat</h3><p class="muted">${esc(e.message)}</p></div>`; }
 }
 
 $('#loginBtn').onclick = async () => {
   try {
-    const d = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email: $('#lEmail').value, password: $('#lPass').value }) });
+    const d = await api('/auth/login', { method:'POST',
+      body: JSON.stringify({ email: $('#lEmail').value, password: $('#lPass').value }) });
     localStorage.setItem('tok', d.token); boot();
-  } catch (e) { $('#lErr').textContent = e.message; }
+  } catch (e) { $('#lErr').textContent = e.message; $('#lErr').className = 'state dirty'; }
 };
 $('#lPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#loginBtn').click(); });
 $('#logoutBtn').onclick = logout;
 
 async function boot() {
   if (!localStorage.getItem('tok')) return;
-  try { await api('/admin/settings'); } catch { return; }
-  $('#login').style.display = 'none'; $('#panel').style.display = 'block'; $('#logoutBtn').style.display = 'inline-block'; $('#visualBtn').style.display = 'inline-block';
-  $('#tabs').innerHTML = TABS.map(([t, l]) => `<button data-t="${t}">${l}</button>`).join('');
+  try { SCHEMA = await api('/admin/fields'); } catch { return; }
+  $('#login').style.display = 'none'; $('#panel').style.display = 'block';
+  $('#logoutBtn').style.display = 'inline-block';
+  const vb = $('#visualBtn'); vb.href = ROOT + '?edit=1'; vb.style.display = 'inline-block';
+  $('#tabs').innerHTML = TABS.map(([t, l]) => `<button data-t="${t}">${esc(l)}</button>`).join('');
   document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.t));
   show('settings');
 }

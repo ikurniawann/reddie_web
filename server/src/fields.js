@@ -147,3 +147,55 @@ export function fieldSchema() {
   }
   return { groups: GROUPS, fields: out };
 }
+
+// ============================================================
+// Kolom tabel (agents & skills) — label manusiawi untuk panel admin.
+// Tanpa ini editor melihat "slug", "sort", "show_in_dropdown",
+// "system_prompt" tanpa penjelasan apa pun.
+// ============================================================
+
+export const TABLES = {
+  agents: {
+    label: 'Agent AI',
+    help: 'Karakter AI yang bisa dipilih pengunjung. Slug mengunci identitasnya; nama boleh diganti kapan saja.',
+    columns: [
+      { name: 'name',             label: 'Nama tampilan',   type: 'text',   max: 30, help: 'Yang dilihat pengunjung di daftar pilihan agent.' },
+      { name: 'slug',             label: 'Kode identitas',  type: 'slug',   max: 30, help: 'Kunci teknis, huruf kecil tanpa spasi. JANGAN diubah setelah dipakai — percakapan lama akan kehilangan rujukannya.' },
+      { name: 'image',            label: 'Gambar agent',    type: 'image',           help: 'Muncul di korsel halaman About. Disarankan latar transparan.' },
+      { name: 'description',      label: 'Deskripsi',       type: 'html',   max: 400, help: 'Paragraf di halaman About. Boleh memakai <strong> untuk menebalkan.' },
+      { name: 'system_prompt',    label: 'Kepribadian',     type: 'prompt', max: 2000, help: 'Instruksi cara agent ini menjawab. Tulis seperti memberi arahan ke staf baru: siapa dia, apa keahliannya, gaya bicaranya, dan batasannya.' },
+      { name: 'show_in_dropdown', label: 'Tampil di daftar pilihan', type: 'bool', help: 'Muncul di dropdown pojok kanan atas konsol.' },
+      { name: 'show_in_carousel', label: 'Tampil di korsel About',   type: 'bool', help: 'Muncul di korsel halaman About.' },
+      { name: 'enabled',          label: 'Aktif',           type: 'bool',   help: 'Nonaktifkan untuk menyembunyikan tanpa menghapus.' },
+      { name: 'sort',             label: 'Urutan',          type: 'int',    help: 'Angka kecil tampil lebih dulu.' },
+    ],
+  },
+  skills: {
+    label: 'Kartu kemampuan',
+    help: 'Kartu di kolom tengah konsol. Tombolnya menjalankan fungsi nyata untuk PDF dan Excel.',
+    columns: [
+      { name: 'title',        label: 'Judul kartu',      type: 'text',  max: 30, help: 'Judul tebal di dalam kartu.' },
+      { name: 'slug',         label: 'Kode identitas',   type: 'slug',  max: 20, help: 'Menentukan fungsi tombolnya: pdf dan excel sudah bekerja. JANGAN diubah.' },
+      { name: 'subtitle',     label: 'Baris kecil',      type: 'text',  max: 40, help: 'Keterangan abu-abu di bawah judul.' },
+      { name: 'description',  label: 'Penjelasan',       type: 'textarea', max: 200, help: 'Paragraf isi kartu.' },
+      { name: 'button_label', label: 'Tulisan tombol',   type: 'text',  max: 30 },
+      { name: 'icon',         label: 'Ikon',             type: 'icon',  help: 'Ikon di pojok kiri atas kartu.' },
+      { name: 'color',        label: 'Warna aksen',      type: 'color', help: 'Warna tombol dan latar ikon.' },
+      { name: 'enabled',      label: 'Aktif',            type: 'bool',  help: 'Nonaktifkan untuk menyembunyikan tanpa menghapus.' },
+      { name: 'sort',         label: 'Urutan',           type: 'int',   help: 'Angka kecil tampil lebih dulu.' },
+    ],
+  },
+};
+
+// Pilihan ikon untuk pemilih visual — editor tidak perlu tahu nama kelas
+// Font Awesome, cukup melihat gambarnya.
+export const ICONS = [
+  'fa-file-pdf', 'fa-file-excel', 'fa-file-word', 'fa-file-lines', 'fa-database',
+  'fa-arrows-rotate', 'fa-cloud-arrow-up', 'fa-server', 'fa-network-wired', 'fa-plug',
+  'fa-bolt', 'fa-wand-magic-sparkles', 'fa-robot', 'fa-brain', 'fa-microchip',
+  'fa-comments', 'fa-envelope', 'fa-bell', 'fa-calendar-check', 'fa-clock',
+  'fa-chart-line', 'fa-chart-pie', 'fa-magnifying-glass-chart', 'fa-table-list', 'fa-list-check',
+  'fa-shield-halved', 'fa-lock', 'fa-key', 'fa-user-shield', 'fa-fingerprint',
+  'fa-code', 'fa-terminal', 'fa-bug', 'fa-gears', 'fa-screwdriver-wrench',
+  'fa-book-open', 'fa-graduation-cap', 'fa-lightbulb', 'fa-rocket', 'fa-star',
+];

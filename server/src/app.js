@@ -5,7 +5,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { q } from './db.js';
 import { complete, providerReady, ProviderError } from './providers.js';
-import { fieldSchema } from './fields.js';
+import { fieldSchema, TABLES, ICONS } from './fields.js';
 import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -168,7 +168,7 @@ export function buildApp() {
 
   // Skema field: label manusiawi, jenis input, teks bantuan.
   // Dipakai panel admin & editor visual untuk membangun form yang ramah.
-  admin.get('/fields', (_req, res) => res.json(fieldSchema()));
+  admin.get('/fields', (_req, res) => res.json({ ...fieldSchema(), tables: TABLES, icons: ICONS }));
 
   admin.get('/settings', async (_req, res) => {
     const r = await q('SELECT key, value FROM settings ORDER BY key');
@@ -199,9 +199,16 @@ export function buildApp() {
       res.status(201).json(r.rows[0]);
     });
     admin.put(`/${name}/:id`, async (req, res) => {
-      const sets = cols.map((c, i) => `${c}=coalesce($${i + 1}, ${c})`).join(',');
-      const vals = cols.map(c => req.body[c] ?? null);
-      const r = await q(`UPDATE ${name} SET ${sets} WHERE id=$${cols.length + 1} RETURNING *`, [...vals, req.params.id]);
+      // Hanya kolom yang benar-benar dikirim yang diubah. Ini yang membuat
+      // pengosongan field mungkin: dulu coalesce() membaca null sebagai
+      // "biarkan apa adanya", sehingga editor tidak pernah bisa menghapus
+      // isi sebuah field — nilai lama selalu kembali setelah disimpan.
+      const body = req.body || {};
+      const present = cols.filter(c => Object.prototype.hasOwnProperty.call(body, c));
+      if (!present.length) return res.status(400).json({ error: 'Tidak ada kolom yang dikirim.' });
+      const sets = present.map((c, i) => `${c}=$${i + 1}`).join(',');
+      const vals = present.map(c => body[c]);
+      const r = await q(`UPDATE ${name} SET ${sets} WHERE id=$${present.length + 1} RETURNING *`, [...vals, req.params.id]);
       if (!r.rowCount) return res.status(404).json({ error: 'not found' });
       res.json(r.rows[0]);
     });
