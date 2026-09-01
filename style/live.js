@@ -43,6 +43,10 @@
                         sessionStorage.setItem('reddieSession', d.sessionId);
                     }
                     if (!r.ok) { var e = new Error(d.error || 'HTTP ' + r.status); e.status = r.status; e.userMessage = d.error; throw e; }
+                    // Task diubah lewat percakapan -> panel ikut menyegar,
+                    // supaya angka dan daftarnya tidak bertentangan dengan
+                    // apa yang barusan dikatakan agent di chat.
+                    if (d.tasksChanged) refreshTaskPanel();
                     return d;
                 });
             });
@@ -395,8 +399,8 @@
 
     function loadTasks() {
         var box = document.querySelector('[data-taskpanel]');
-        if (!box) return;
-        fetch(API + '/tasks', { signal: AbortSignal.timeout(15000) })
+        if (!box) return Promise.resolve();
+        return fetch(API + '/tasks', { signal: AbortSignal.timeout(15000) })
             .then(function (r) { return r.json().catch(function () { return {}; }); })
             .then(function (d) { renderTasks(box, d); })
             .catch(function () {
@@ -405,6 +409,21 @@
             });
     }
     window.REDDIE_TASKS = loadTasks;
+
+    // Dipanggil setelah percakapan mengubah task. Kedipan singkat memberi
+    // tahu bahwa panel benar-benar dimuat ulang — tanpa itu, perubahan pada
+    // daftar yang panjang mudah terlewat.
+    function refreshTaskPanel() {
+        var box = document.querySelector('[data-taskpanel]');
+        if (!box) return;                       // menu Task Focus sedang tidak dibuka
+        box.style.transition = 'opacity .15s';
+        box.style.opacity = '0.35';
+        // Opasitas dipulihkan setelah data benar-benar sampai, bukan setelah
+        // jeda tetap — kalau jaringan lambat, panel jangan terang lebih dulu
+        // sementara isinya masih yang lama.
+        loadTasks().then(function () { box.style.opacity = '1'; });
+    }
+    window.REDDIE_TASKS_REFRESH = refreshTaskPanel;
 
     function taskMsg(t, bad) {
         var el = document.querySelector('[data-taskmsg]');
@@ -559,7 +578,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g1';
+        sc.src = 'style/editor.js?v=20260901-g2';
         document.body.appendChild(sc);
     }
 

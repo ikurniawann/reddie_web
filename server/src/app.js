@@ -171,6 +171,11 @@ export function buildApp() {
     try {
       let convo = history.map(m => ({ role: m.role, content: m.content }));
       let text = '';
+      // Ditandai bila ada tool yang MENGUBAH data, supaya klien tahu perlu
+      // menyegarkan panelnya. list_tasks tidak dihitung — membaca saja tidak
+      // mengubah apa pun, dan menyegarkan tanpa sebab hanya bikin panel berkedip.
+      let tasksChanged = false;
+      const MUTATING = ['create_task', 'update_task', 'cancel_task', 'complete_task'];
       // Dibatasi 3 putaran: cukup untuk lihat-lalu-ubah, dan mencegah model
       // berputar memanggil tool tanpa henti dengan biaya per panggilan.
       for (let round = 0; round < 3; round++) {
@@ -186,14 +191,16 @@ export function buildApp() {
         for (const tc of r.toolCalls) {
           let args = {};
           try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* argumen rusak */ }
-          const out = await runTaskTool(taskCfg, tc.function?.name, args);
+          const fname = tc.function?.name;
+          const out = await runTaskTool(taskCfg, fname, args);
+          if (out && out.ok && MUTATING.includes(fname)) tasksChanged = true;
           convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
         }
         text = r.text;
       }
       const reply = text || '(jawaban kosong)';
       await q(`INSERT INTO chat_messages (session_id, role, content) VALUES ($1,'assistant',$2)`, [sid, reply]);
-      res.json({ sessionId: sid, reply, model: mRow.model_id, agent: aRow.slug });
+      res.json({ sessionId: sid, reply, model: mRow.model_id, agent: aRow.slug, tasksChanged });
     } catch (e) {
       const status = e instanceof ProviderError ? e.status : 502;
       console.error('[chat]', e.message);
