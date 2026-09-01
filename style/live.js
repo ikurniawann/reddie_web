@@ -266,7 +266,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f1';
+        sc.src = 'style/editor.js?v=20260901-f2';
         document.body.appendChild(sc);
     }
 

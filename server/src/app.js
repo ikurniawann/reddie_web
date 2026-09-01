@@ -6,6 +6,7 @@ import bcrypt from 'bcryptjs';
 import { q } from './db.js';
 import { complete, providerReady, ProviderError } from './providers.js';
 import { fieldSchema } from './fields.js';
+import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -235,6 +236,69 @@ export function buildApp() {
   });
   admin.delete('/models/:id', async (req, res) => {
     await q('DELETE FROM ai_models WHERE id=$1', [req.params.id]);
+    res.json({ ok: true });
+  });
+
+  // ═══════════ PUSTAKA MEDIA ═══════════
+
+  admin.get('/media', async (req, res) => {
+    const limit = Math.min(Number(req.query.limit || 200), 500);
+    res.json((await q(
+      `SELECT id, path, filename, mime, bytes, width, height, alt, source, created_at
+       FROM media ORDER BY source, created_at DESC LIMIT $1`, [limit])).rows);
+  });
+
+  // Unggah: badan permintaan adalah berkas mentah, nama asli lewat header.
+  // Tanpa multipart, jadi tanpa dependensi parser tambahan.
+  admin.post('/media',
+    express.raw({ type: ['image/*', 'application/octet-stream'], limit: MAX_UPLOAD }),
+    async (req, res) => {
+      try {
+        const name = decodeURIComponent(String(req.headers['x-filename'] || 'gambar'));
+        const info = await processUpload(req.body, name);
+        const row = (await q(
+          `INSERT INTO media (path, filename, mime, bytes, width, height, alt, source)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,'upload')
+           ON CONFLICT (path) DO UPDATE SET filename = EXCLUDED.filename
+           RETURNING *`,
+          [info.path, info.filename, info.mime, info.bytes, info.width, info.height,
+           String(req.headers['x-alt'] ? decodeURIComponent(req.headers['x-alt']) : '') || null]
+        )).rows[0];
+        res.status(201).json({ ...row, original: info.original });
+      } catch (e) {
+        if (e instanceof MediaError) return res.status(e.status).json({ error: e.message });
+        console.error('[media]', e);
+        res.status(500).json({ error: 'Gambar gagal diproses.' });
+      }
+    });
+
+  admin.put('/media/:id', async (req, res) => {
+    const r = await q('UPDATE media SET alt=$1 WHERE id=$2 RETURNING *',
+      [String(req.body?.alt || '').slice(0, 300) || null, req.params.id]);
+    if (!r.rowCount) return res.status(404).json({ error: 'not found' });
+    res.json(r.rows[0]);
+  });
+
+  // Hapus hanya bila tidak sedang dipakai. Editor non-teknis tidak akan tahu
+  // gambar mana yang terpasang di mana, jadi penjagaan ini ada di server.
+  admin.delete('/media/:id', async (req, res) => {
+    const row = (await q('SELECT * FROM media WHERE id=$1', [req.params.id])).rows[0];
+    if (!row) return res.status(404).json({ error: 'not found' });
+
+    const inAgents = (await q('SELECT name FROM agents WHERE image = $1', [row.path])).rows;
+    const inSettings = (await q(
+      `SELECT key FROM settings WHERE value::text LIKE '%' || $1 || '%'`, [row.path])).rows;
+    if (inAgents.length || inSettings.length) {
+      const where = [...inAgents.map(a => `agent ${a.name}`), ...inSettings.map(s => `bagian ${s.key}`)];
+      return res.status(409).json({
+        error: `Gambar ini masih dipakai di ${where.join(', ')}. Ganti dulu di sana sebelum menghapus.`,
+      });
+    }
+    if (row.source === 'bundled') {
+      return res.status(409).json({ error: 'Gambar bawaan tidak bisa dihapus dari sini — hapus berkasnya lewat repo.' });
+    }
+    await removeFile(row.path);
+    await q('DELETE FROM media WHERE id=$1', [row.id]);
     res.json({ ok: true });
   });
 

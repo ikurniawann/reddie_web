@@ -16,3 +16,6 @@ npm-debug.log*
 Thumbs.db
 .vscode/
 .idea/
+
+# Media unggahan (hidup di volume server, bukan di repo)
+media/

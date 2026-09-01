@@ -52,6 +52,20 @@
         '.re-item{position:relative}' +
         '.re-imgpick{cursor:pointer!important;outline:2px dashed transparent;outline-offset:4px}' +
         '.re-imgpick:hover{outline-color:#ff3333}' +
+        '.re-modal{position:fixed;inset:0;z-index:100000;background:rgba(0,0,0,.55);display:flex;align-items:center;justify-content:center;padding:2rem}' +
+        '.re-modal-box{background:#fff;border-radius:14px;width:min(760px,100%);max-height:82vh;display:flex;flex-direction:column;overflow:hidden;font:400 14px system-ui,sans-serif;color:#111}' +
+        '.re-modal-head{padding:1rem 1.2rem;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;justify-content:space-between;gap:1rem}' +
+        '.re-modal-head b{font-size:1rem}' +
+        '.re-modal-head small{display:block;color:#6b7280;font-weight:400;margin-top:.15rem;font-size:.78rem}' +
+        '.re-grid{padding:1rem 1.2rem;overflow-y:auto;display:grid;grid-template-columns:repeat(auto-fill,minmax(122px,1fr));gap:.7rem}' +
+        '.re-tile{border:2px solid #e5e7eb;border-radius:10px;padding:.4rem;cursor:pointer;background:#fff;text-align:center;transition:border-color .15s,transform .15s}' +
+        '.re-tile:hover{border-color:#ff3333;transform:translateY(-2px)}' +
+        '.re-tile.on{border-color:#ff3333;background:#fff5f5}' +
+        '.re-tile img{width:100%;height:82px;object-fit:contain;display:block}' +
+        '.re-tile span{display:block;font-size:.66rem;color:#6b7280;margin-top:.35rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}' +
+        '.re-drop{margin:0 1.2rem 1rem;border:2px dashed #d1d5db;border-radius:10px;padding:1.1rem;text-align:center;color:#6b7280;font-size:.84rem;cursor:pointer;transition:all .15s}' +
+        '.re-drop.hot{border-color:#ff3333;background:#fff5f5;color:#ff3333}' +
+        '.re-modal-foot{padding:.8rem 1.2rem;border-top:1px solid #e5e7eb;display:flex;justify-content:flex-end;gap:.5rem}' +
         '.re-limit{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:99999;background:#b45309;color:#fff;padding:.45rem .9rem;border-radius:8px;font:600 12px system-ui;opacity:0;transition:opacity .2s;pointer-events:none}' +
         '.re-attrpick{cursor:pointer!important}' +
         '.re-banner{position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3333;color:#fff;' +
@@ -116,6 +130,111 @@
     function pushSetting(grp, field, value) {
         var patch = {}; patch[field] = value;
         markDirty('setting:' + grp + '.' + field, { type: 'setting', key: grp, patch: patch });
+    }
+
+    // ── pemilih gambar: galeri + seret-dan-lepas ─────────────────
+    // Menggantikan prompt() yang meminta path diketik manual. Editor
+    // non-teknis tidak tahu path berkas; mereka tahu gambarnya yang mana.
+    var mediaCache = null;
+
+    function loadMedia(force) {
+        if (mediaCache && !force) return Promise.resolve(mediaCache);
+        return req('/admin/media').then(function (rows) { mediaCache = rows; return rows; });
+    }
+
+    function uploadFile(file) {
+        if (!/^image\//.test(file.type)) {
+            return Promise.reject(new Error('"' + file.name + '" bukan berkas gambar.'));
+        }
+        return file.arrayBuffer().then(function (buf) {
+            return fetch(API + '/admin/media', {
+                method: 'POST',
+                headers: {
+                    'content-type': file.type,
+                    'x-filename': encodeURIComponent(file.name),
+                    authorization: 'Bearer ' + tok,
+                },
+                body: buf,
+            }).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (d) {
+                    if (!r.ok) throw new Error(d.error || 'Unggahan gagal (HTTP ' + r.status + ')');
+                    mediaCache = null;
+                    return d;
+                });
+            });
+        });
+    }
+
+    function pickImage(current, onPick) {
+        var ov = document.createElement('div');
+        ov.className = 're-modal';
+        ov.innerHTML =
+            '<div class="re-modal-box">' +
+              '<div class="re-modal-head"><div><b>Pilih gambar</b>' +
+                '<small>Klik salah satu, atau unggah yang baru. Gambar besar otomatis dikecilkan.</small>' +
+              '</div><button class="re-ghost" data-x style="border:1px solid #d1d5db!important;' +
+                'color:#374151;background:#fff">Tutup</button></div>' +
+              '<div class="re-grid" data-grid><p style="color:#6b7280">Memuat…</p></div>' +
+              '<div class="re-drop" data-drop>Seret gambar ke sini, atau <u>pilih dari komputer</u><br>' +
+                '<small style="font-size:.72rem">PNG, JPG, WebP, GIF · maksimal 8 MB</small></div>' +
+              '<div class="re-modal-foot"><span data-msg style="flex:1;font-size:.8rem;color:#6b7280"></span>' +
+                '<button class="re-ghost" data-x style="border:1px solid #d1d5db!important;' +
+                'color:#374151;background:#fff">Batal</button></div>' +
+            '</div>';
+        document.body.appendChild(ov);
+
+        var grid = ov.querySelector('[data-grid]');
+        var drop = ov.querySelector('[data-drop]');
+        var msg  = ov.querySelector('[data-msg]');
+        var input = document.createElement('input');
+        input.type = 'file'; input.accept = 'image/*'; input.multiple = true;
+
+        function close() { ov.remove(); }
+        [].forEach.call(ov.querySelectorAll('[data-x]'), function (b) { b.onclick = close; });
+        ov.addEventListener('click', function (e) { if (e.target === ov) close(); });
+
+        function say(t, bad) { msg.textContent = t || ''; msg.style.color = bad ? '#b91c1c' : '#6b7280'; }
+
+        function render(rows) {
+            if (!rows.length) { grid.innerHTML = '<p style="color:#6b7280">Belum ada gambar. Unggah yang pertama di bawah.</p>'; return; }
+            grid.innerHTML = rows.map(function (m) {
+                var on = m.path === current ? ' on' : '';
+                return '<button class="re-tile' + on + '" data-path="' + esc(m.path) + '">' +
+                    '<img src="' + esc(m.path) + '" alt="" loading="lazy">' +
+                    '<span title="' + esc(m.filename) + '">' + esc(m.filename) + '</span></button>';
+            }).join('');
+            [].forEach.call(grid.querySelectorAll('.re-tile'), function (t) {
+                t.onclick = function () { onPick(t.dataset.path); close(); };
+            });
+        }
+
+        loadMedia().then(render).catch(function (e) {
+            grid.innerHTML = '<p style="color:#b91c1c">Gagal memuat galeri: ' + esc(e.message) + '</p>';
+        });
+
+        function handleFiles(files) {
+            if (!files || !files.length) return;
+            say('Mengunggah ' + files.length + ' berkas…');
+            var picked = null;
+            [].reduce.call(files, function (chain, f) {
+                return chain.then(function () {
+                    return uploadFile(f).then(function (d) { picked = picked || d.path; });
+                });
+            }, Promise.resolve())
+              .then(function () { return loadMedia(true); })
+              .then(function (rows) { render(rows); say('Selesai. Klik gambar untuk memakainya.'); })
+              .catch(function (e) { say(e.message, true); });
+        }
+
+        drop.onclick = function () { input.click(); };
+        input.onchange = function () { handleFiles(input.files); input.value = ''; };
+        ['dragenter', 'dragover'].forEach(function (ev) {
+            drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.add('hot'); });
+        });
+        ['dragleave', 'drop'].forEach(function (ev) {
+            drop.addEventListener(ev, function (e) { e.preventDefault(); drop.classList.remove('hot'); });
+        });
+        drop.addEventListener('drop', function (e) { handleFiles(e.dataTransfer.files); });
     }
 
     var limitBox = null;
@@ -337,11 +456,13 @@
         desc.addEventListener('input', function () { push('description', desc.innerHTML.trim()); });
         if (img) {
             img.classList.add('re-imgpick');
-            img.title = 'Klik untuk ganti gambar (path/URL)';
+            img.title = 'Klik untuk ganti gambar';
             img.addEventListener('click', function (e) {
                 e.preventDefault(); e.stopPropagation();
-                var v = prompt('Path/URL gambar agent ini:', img.getAttribute('src') || '');
-                if (v && v.trim()) { img.src = v.trim(); push('image', v.trim()); }
+                pickImage(img.getAttribute('src') || '', function (p) {
+                    img.src = p;
+                    push('image', p);
+                });
             });
         }
     }
