@@ -946,22 +946,6 @@
                  label + (c.ms ? ' · ' + c.ms + 'ms' : '') + '</span></div>';
     }
 
-    function wfRow(w) {
-        return '<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;' +
-               'border-top:1px solid rgba(0,0,0,.05);">' +
-               '<div style="flex:1;min-width:0;">' +
-                 '<div style="font-size:.76rem;font-weight:700;color:#111827;">' + esc(w.name) + '</div>' +
-                 '<div style="font-size:.63rem;color:#6b7280;">' +
-                   (w.active ? 'aktif' : 'nonaktif') + (w.nodes ? ' · ' + w.nodes + ' langkah' : '') +
-                   (w.runnable ? '' : ' · ' + esc(w.reason || '')) + '</div>' +
-               '</div>' +
-               (w.runnable && w.active
-                 ? '<button data-runwf="' + esc(w.id) + '" style="flex:0 0 auto;background:#16192a;color:#fff;' +
-                   'border:none;border-radius:8px;padding:.32rem .7rem;font:700 .68rem system-ui;cursor:pointer;">Jalankan</button>'
-                 : '') +
-               '</div>';
-    }
-
     function loadAutomation() {
         var box = document.querySelector('[data-autopanel]');
         if (!box) return Promise.resolve();
@@ -978,20 +962,18 @@
                 var conns = d.connections || [], wfs = d.workflows || [];
                 var aktif = conns.filter(function (c) { return c.up; }).length;
                 tampilGrafikChat(conns, wfs, d.n8n);   // versi besar di area chat
+                // Kolom tengah hanya menampilkan RINGKASAN koneksi. Daftar
+                // workflow, tombol Jalankan, dan hasilnya semuanya hidup di
+                // panel kaca area chat — menduplikasinya di sini membuat dua
+                // tempat yang harus dijaga sinkron tanpa manfaat apa pun.
                 box.innerHTML =
                     petaSVG(conns) +
                     '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
                       'margin:.4rem 0 .1rem;">KONEKSI · ' + aktif + '/' + conns.length + ' AKTIF</div>' +
                     conns.map(connRow).join('') +
-                    '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
-                      'margin:1rem 0 .1rem;">WORKFLOW N8N</div>' +
-                    (!d.n8n
-                      ? '<p style="font-size:.72rem;color:#92400e;margin:.4rem 0 0;line-height:1.5;">' +
-                        'API key n8n belum diisi, jadi daftar workflow tidak bisa dibaca. ' +
-                        'Buat di n8n &rarr; Settings &rarr; API, lalu isikan <b>N8N_API_KEY</b> di berkas .env server.</p>'
-                      : wfs.length ? wfs.map(wfRow).join('')
-                        : '<p style="font-size:.72rem;color:#6b7280;margin:.4rem 0 0;">Belum ada workflow di n8n.</p>') +
-                    '<p data-automsg style="font-size:.68rem;color:#6b7280;margin:.6rem 0 0;text-align:center;"></p>';
+                    (d.n8n ? '' :
+                      '<p style="font-size:.7rem;color:#92400e;margin:.7rem 0 0;line-height:1.5;">' +
+                      'API key n8n belum diisi, jadi daftar workflow tidak bisa dibaca.</p>');
             })
             .catch(function () {
                 box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">Panel automation tidak terjangkau.</p>';
@@ -999,9 +981,9 @@
     }
     window.REDDIE_AUTOMATION = loadAutomation;
 
-    // Pesan hasil ditulis ke SEMUA elemen [data-automsg] — panel kaca di area
-    // chat dan kolom tengah bisa tampil bersamaan, dan hanya memperbarui yang
-    // pertama membuat salah satunya menampilkan keadaan basi.
+    // Sekarang hanya panel kaca yang memuat [data-automsg]. Tetap ditulis
+    // lewat querySelectorAll supaya menambahkan tempat kedua kelak tidak
+    // menuntut perubahan di sini.
     // Kartu berkas hasil otomasi: sampul PDF plus dua tombol. Sengaja
     // menyediakan "buka" DAN "unduh" — saat demo orang ingin melihat isinya
     // seketika, bukan mencarinya di folder unduhan.
@@ -1333,7 +1315,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-j2';
+        sc.src = 'style/editor.js?v=20260901-j3';
         document.body.appendChild(sc);
     }
 
