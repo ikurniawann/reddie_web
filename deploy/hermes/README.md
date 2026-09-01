@@ -2,13 +2,21 @@
 
 ## Skill Hermes
 
-`SKILL.md` di folder ini adalah salinan skill yang sudah terpasang di
-`~/.hermes/skills/reddie-control/`. Dengan skill itu, Hermes tahu sendiri
-cara memakai jembatan — cukup diberi kode sesinya lewat WhatsApp atau
-terminal, tanpa perlu dijelaskan ulang tiap kali.
+Folder `wit/` di sini adalah salinan skill yang sudah terpasang di
+`~/.hermes/skills/`. Dengan skill itu Hermes tahu sendiri cara memakai
+jembatan — cukup diberi kode sesinya, tanpa perlu dijelaskan ulang.
 
-Bila Hermes dipasang ulang atau dipindah mesin, salin berkas itu ke
-`~/.hermes/skills/reddie-control/SKILL.md`.
+Bila Hermes dipasang ulang atau pindah mesin:
+
+```bash
+cp -r deploy/hermes/wit ~/.hermes/skills/
+```
+
+**Strukturnya wajib dua tingkat**: `skills/<kategori>/<nama>/SKILL.md`,
+dengan `DESCRIPTION.md` di tingkat kategori. Menaruh `SKILL.md` langsung di
+bawah `skills/` membuatnya tidak terbaca sama sekali — Hermes diam saja,
+tanpa peringatan, dan mengerjakan permintaan dari nol seolah skill itu tidak
+ada.
 
 
 Hermes mengendalikan tampilan pengunjung lewat **HTTP biasa**, bukan

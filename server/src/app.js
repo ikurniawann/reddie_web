@@ -368,6 +368,18 @@ export function buildApp() {
   // Dipanggil Hermes dari server. Setiap perintah divalidasi terhadap daftar
   // tertutup di bridge.js sebelum diteruskan ke browser pengunjung.
 
+  // GET biasa ke jalur WebSocket dulu menjawab 404 buntu, dan itu menyesatkan:
+  // agent yang memeriksa dengan curl menyimpulkan fiturnya mati padahal
+  // upgrade WebSocket-nya sehat. Sekarang jalur ini menjelaskan dirinya.
+  app.get('/api/bridge', (_req, res) => {
+    res.status(426).json({
+      error: 'Jalur ini hanya menerima koneksi WebSocket, bukan HTTP biasa.',
+      cara: 'Sambungkan dengan wss:// ke alamat yang sama. Permintaan GET seperti ini memang tidak dilayani.',
+      petunjuk: '/api/bridge/info memuat daftar tindakan yang tersedia.',
+      websocket: true,
+    });
+  });
+
   app.get('/api/bridge/info', (_req, res) => {
     res.json({
       siap: operatorSiap(),
