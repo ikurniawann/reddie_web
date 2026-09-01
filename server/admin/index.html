@@ -1,0 +1,193 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Reddie CMS</title>
+<style>
+  :root { --red:#ff3333; --bg:#f5f5f7; --card:#fff; --line:#e5e7eb; --txt:#111827; --mut:#6b7280; }
+  * { box-sizing:border-box; margin:0; }
+  body { font-family:system-ui,-apple-system,sans-serif; background:var(--bg); color:var(--txt); }
+  header { background:#111; color:#fff; padding:.8rem 1.2rem; display:flex; justify-content:space-between; align-items:center; }
+  header b { color:var(--red); }
+  main { max-width:1100px; margin:1.2rem auto; padding:0 1rem; }
+  nav.tabs { display:flex; gap:.4rem; flex-wrap:wrap; margin-bottom:1rem; }
+  nav.tabs button { padding:.5rem .9rem; border:1px solid var(--line); background:var(--card); border-radius:8px; cursor:pointer; font-weight:600; }
+  nav.tabs button.on { background:var(--red); color:#fff; border-color:var(--red); }
+  .card { background:var(--card); border:1px solid var(--line); border-radius:12px; padding:1rem; margin-bottom:1rem; }
+  table { width:100%; border-collapse:collapse; font-size:.85rem; }
+  th,td { text-align:left; padding:.45rem .5rem; border-bottom:1px solid var(--line); vertical-align:top; }
+  th { color:var(--mut); font-size:.72rem; text-transform:uppercase; }
+  input,textarea,select { width:100%; padding:.45rem .6rem; border:1px solid var(--line); border-radius:8px; font:inherit; }
+  textarea { min-height:90px; font-family:ui-monospace,monospace; font-size:.8rem; }
+  button.act { padding:.45rem .9rem; border:none; border-radius:8px; background:var(--red); color:#fff; font-weight:700; cursor:pointer; }
+  button.ghost { background:transparent; color:var(--mut); border:1px solid var(--line); }
+  .row { display:flex; gap:.6rem; margin:.5rem 0; flex-wrap:wrap; }
+  .row > * { flex:1; min-width:140px; }
+  .muted { color:var(--mut); font-size:.78rem; }
+  .pill { display:inline-block; padding:.1rem .5rem; border-radius:99px; font-size:.7rem; font-weight:700; }
+  .ok { background:#dcfce7; color:#166534; } .no { background:#fee2e2; color:#991b1b; }
+  #login { max-width:360px; margin:12vh auto; }
+  #toast { position:fixed; bottom:1rem; right:1rem; background:#111; color:#fff; padding:.6rem 1rem; border-radius:8px; display:none; }
+  pre.chat { white-space:pre-wrap; font-size:.8rem; background:#f9fafb; padding:.6rem; border-radius:8px; }
+</style>
+</head>
+<body>
+<header><div><b>REDDIE</b> CMS</div><div style="display:flex;gap:.5rem"><a href="../../?edit=1" class="ghost act" id="visualBtn" style="display:none;text-decoration:none;padding:.45rem .9rem;border-radius:8px;border:1px solid #444;color:#fff;font-weight:700;font-size:.85rem">&#128396; Edit Visual</a><button class="ghost act" id="logoutBtn" style="display:none">Keluar</button></div></header>
+<main>
+  <div id="login" class="card">
+    <h3 style="margin-bottom:.8rem">Masuk Admin</h3>
+    <div class="row"><input id="lEmail" type="email" placeholder="Email"></div>
+    <div class="row"><input id="lPass" type="password" placeholder="Password"></div>
+    <button class="act" id="loginBtn" style="width:100%">Masuk</button>
+    <p class="muted" id="lErr" style="margin-top:.5rem"></p>
+  </div>
+
+  <div id="panel" style="display:none">
+    <nav class="tabs" id="tabs"></nav>
+    <div id="content"></div>
+  </div>
+</main>
+<div id="toast"></div>
+<script>
+'use strict';
+const $ = s => document.querySelector(s);
+const api = (p, opt = {}) => fetch('../api' + p, {
+  ...opt,
+  headers: { 'content-type': 'application/json', authorization: 'Bearer ' + (localStorage.getItem('tok') || ''), ...(opt.headers || {}) },
+}).then(async r => {
+  if (r.status === 401 && p !== '/auth/login') { logout(); throw new Error('Sesi berakhir, silakan masuk lagi'); }
+  const d = await r.json().catch(() => ({}));
+  if (!r.ok) throw new Error(d.error || ('HTTP ' + r.status));
+  return d;
+});
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+function toast(m) { const t = $('#toast'); t.textContent = m; t.style.display = 'block'; setTimeout(() => t.style.display = 'none', 2200); }
+function logout() { localStorage.removeItem('tok'); $('#panel').style.display = 'none'; $('#login').style.display = 'block'; $('#logoutBtn').style.display = 'none'; }
+
+const TABS = [
+  ['settings', 'Pengaturan'], ['agents', 'Agents'], ['skills', 'Skills'],
+  ['models', 'Model AI'], ['leads', 'Leads'], ['chats', 'Riwayat Chat'],
+];
+let cur = 'settings';
+
+async function show(tab) {
+  cur = tab;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.t === tab));
+  const c = $('#content'); c.innerHTML = '<div class="card muted">Memuat…</div>';
+  try { await ({ settings, agents, skills, models, leads, chats })[tab](c); }
+  catch (e) { c.innerHTML = '<div class="card">⚠ ' + esc(e.message) + '</div>'; }
+}
+
+async function settings(c) {
+  const s = await api('/admin/settings');
+  c.innerHTML = Object.entries(s).map(([k, v]) => `
+    <div class="card"><b>${esc(k)}</b>
+      <div class="row"><textarea data-k="${esc(k)}">${esc(JSON.stringify(v, null, 2))}</textarea></div>
+      <button class="act" data-save="${esc(k)}">Simpan ${esc(k)}</button>
+    </div>`).join('');
+  c.querySelectorAll('[data-save]').forEach(b => b.onclick = async () => {
+    const k = b.dataset.save, ta = c.querySelector(`textarea[data-k="${k}"]`);
+    let val; try { val = JSON.parse(ta.value); } catch { return toast('JSON tidak valid'); }
+    await api('/admin/settings/' + k, { method: 'PUT', body: JSON.stringify(val) });
+    toast('Tersimpan: ' + k);
+  });
+}
+
+function crudTable(c, res, cols, labels, renderExtra) {
+  return api('/admin/' + res).then(rows => {
+    c.innerHTML = `<div class="card">
+      <table><thead><tr>${labels.map(l => '<th>' + esc(l) + '</th>').join('')}<th></th></tr></thead>
+      <tbody>${rows.map(r => `<tr>${cols.map(k => '<td>' + esc(String(r[k] ?? '')).slice(0, 60) + '</td>').join('')}
+        <td><button class="ghost act" data-e="${r.id}">Edit</button> <button class="ghost act" data-d="${r.id}">Hapus</button></td></tr>`).join('')}
+      </tbody></table>
+      <div style="margin-top:.7rem"><button class="act" data-new>+ Tambah</button></div>
+      <div id="form"></div></div>`;
+    const openForm = (row = {}) => {
+      $('#form').innerHTML = `<hr style="margin:1rem 0;border:none;border-top:1px solid var(--line)">
+        ${cols.map(k => `<div class="row"><label style="flex:0 0 130px" class="muted">${esc(k)}</label>
+          ${k.length > 12 || ['description', 'system_prompt', 'message'].includes(k)
+            ? `<textarea data-f="${k}">${esc(row[k] ?? '')}</textarea>`
+            : `<input data-f="${k}" value="${esc(row[k] ?? '')}">`}</div>`).join('')}
+        <button class="act" data-submit>${row.id ? 'Perbarui' : 'Buat'}</button>`;
+      $('#form [data-submit]').onclick = async () => {
+        const body = {};
+        $('#form').querySelectorAll('[data-f]').forEach(i => {
+          let v = i.value;
+          if (v === 'true') v = true; else if (v === 'false') v = false;
+          else if (v !== '' && !isNaN(v) && ['sort', 'id'].includes(i.dataset.f)) v = Number(v);
+          body[i.dataset.f] = v === '' ? null : v;
+        });
+        await api('/admin/' + res + (row.id ? '/' + row.id : ''), { method: row.id ? 'PUT' : 'POST', body: JSON.stringify(body) });
+        toast('Tersimpan'); show(cur);
+      };
+    };
+    c.querySelector('[data-new]').onclick = () => openForm();
+    c.querySelectorAll('[data-e]').forEach(b => b.onclick = () => openForm(rows.find(r => r.id == b.dataset.e)));
+    c.querySelectorAll('[data-d]').forEach(b => b.onclick = async () => {
+      if (!confirm('Hapus item ini?')) return;
+      await api('/admin/' + res + '/' + b.dataset.d, { method: 'DELETE' }); toast('Terhapus'); show(cur);
+    });
+    if (renderExtra) renderExtra(rows);
+  });
+}
+const agents = c => crudTable(c, 'agents',
+  ['slug','name','image','description','system_prompt','sort','show_in_dropdown','show_in_carousel','enabled'],
+  ['Slug','Nama','Gambar','Deskripsi','System Prompt','Urut','Dropdown','Carousel','Aktif']);
+const skills = c => crudTable(c, 'skills',
+  ['slug','title','subtitle','description','icon','color','button_label','sort','enabled'],
+  ['Slug','Judul','Subjudul','Deskripsi','Ikon','Warna','Label Tombol','Urut','Aktif']);
+async function models(c) {
+  await crudTable(c, 'models',
+    ['provider','model_id','label','enabled','is_default','sort'],
+    ['Provider','Model ID','Label','Aktif','Default','Urut'],
+    rows => {
+      const info = rows.map(r => `<span class="pill ${r.provider_ready ? 'ok' : 'no'}">${esc(r.provider)}: ${r.provider_ready ? 'key OK' : 'key kosong'}</span>`);
+      c.querySelector('.card').insertAdjacentHTML('afterbegin',
+        `<p class="muted" style="margin-bottom:.6rem">Status API key (dari env server): ${[...new Set(info)].join(' ')}</p>`);
+    });
+}
+async function leads(c) {
+  const rows = await api('/admin/leads');
+  c.innerHTML = `<div class="card"><table><thead><tr><th>Waktu</th><th>Sumber</th><th>Nama</th><th>Email</th><th>Pesan</th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc((r.created_at || '').slice(0, 16).replace('T', ' '))}</td>
+      <td><span class="pill ok">${esc(r.source)}</span></td><td>${esc(r.name)}</td><td>${esc(r.email)}</td>
+      <td>${esc(String(r.message ?? '')).slice(0, 120)}</td></tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada lead</td></tr>'}
+    </tbody></table></div>`;
+}
+async function chats(c) {
+  const rows = await api('/admin/chats');
+  c.innerHTML = `<div class="card"><table><thead><tr><th>Waktu</th><th>Agent</th><th>Model</th><th>Pesan</th><th></th></tr></thead>
+    <tbody>${rows.map(r => `<tr><td>${esc((r.created_at || '').slice(0, 16).replace('T', ' '))}</td>
+      <td>${esc(r.agent_slug)}</td><td>${esc(r.model_id)}</td><td>${r.messages}</td>
+      <td><button class="ghost act" data-v="${r.id}">Lihat</button></td></tr>`).join('') || '<tr><td colspan="5" class="muted">Belum ada sesi</td></tr>'}
+    </tbody></table><div id="detail"></div></div>`;
+  c.querySelectorAll('[data-v]').forEach(b => b.onclick = async () => {
+    const d = await api('/admin/chats/' + b.dataset.v);
+    $('#detail').innerHTML = '<hr style="margin:1rem 0;border:none;border-top:1px solid var(--line)">' +
+      d.messages.map(m => `<pre class="chat"><b>${esc(m.role)}:</b> ${esc(m.content)}</pre>`).join('');
+  });
+}
+
+$('#loginBtn').onclick = async () => {
+  try {
+    const d = await api('/auth/login', { method: 'POST', body: JSON.stringify({ email: $('#lEmail').value, password: $('#lPass').value }) });
+    localStorage.setItem('tok', d.token); boot();
+  } catch (e) { $('#lErr').textContent = e.message; }
+};
+$('#lPass').addEventListener('keydown', e => { if (e.key === 'Enter') $('#loginBtn').click(); });
+$('#logoutBtn').onclick = logout;
+
+async function boot() {
+  if (!localStorage.getItem('tok')) return;
+  try { await api('/admin/settings'); } catch { return; }
+  $('#login').style.display = 'none'; $('#panel').style.display = 'block'; $('#logoutBtn').style.display = 'inline-block'; $('#visualBtn').style.display = 'inline-block';
+  $('#tabs').innerHTML = TABS.map(([t, l]) => `<button data-t="${t}">${l}</button>`).join('');
+  document.querySelectorAll('#tabs button').forEach(b => b.onclick = () => show(b.dataset.t));
+  show('settings');
+}
+boot();
+</script>
+</body>
+</html>

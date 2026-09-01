@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>REDDIE - The AI Agent by WIT</title>
+    <!-- Google Fonts: Montserrat -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700;800;900&display=swap" rel="stylesheet">
+    <!-- Font Awesome for clean SaaS UI icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Main Stylesheet -->
+    <link rel="stylesheet" href="style/style.css?v=20260826-2">
+</head>
+<body>
+
+    <!-- Navigation Header (Fixed at top) -->
+    <header class="site-header">
+        <nav class="nav-container">
+            <div class="nav-left">
+                <a href="#section-home" class="nav-link nav-home active" data-target="home">HOME</a>
+                <a href="#section-try" class="nav-link nav-try" data-target="try">TRY</a>
+            </div>
+            
+            <div class="nav-center">
+                <div class="brand-text">The AI Agent by <span class="brand-wit">WIT</span><span class="brand-dot">.</span></div>
+            </div>
+            
+            <div class="nav-right">
+                <a href="#section-about" class="nav-link nav-about" data-target="about">ABOUT</a>
+                <a href="#section-contact" class="nav-link nav-contact" data-target="contact">CONTACT</a>
+            </div>
+        </nav>
+    </header>
+
+    <!-- Main Content Sections (Parallax Scroll Layout) -->
+    <main class="main-content">
+        
+        <!-- HOME SECTION -->
+        <section class="page-section section-home active" id="section-home">
+            <!-- Back Layer: Huge Logo REDDIE -->
+            <div class="brand-title-huge-container">
+                <h1 class="brand-title-huge">REDDIE<span class="logo-reg">®</span></h1>
+            </div>
+            
+            <!-- Middle Layer: Reddie Character (Stand-alone sandwich layer) -->
+            <img src="assets/Character-Reddie.webp" alt="Reddie Character" class="hero-character">
+            
+            <!-- Front Layer: Subtitle "The Agent Make IT Work" -->
+            <div class="brand-subtitle-container">
+                <h2 class="brand-subtitle">The Agent Make IT Work</h2>
+            </div>
+        </section>
+
+        <!-- TRY SECTION -->
+        <section class="page-section section-try" id="section-try">
+            <div class="dashboard-wrapper">
+                <div class="dashboard-container">
+                    
+                    <!-- Top Header -->
+                    <header class="db-header">
+                        <div class="db-header-left">
+                            <div class="db-logo-box">
+                                <img src="assets/Reddie Logo_Logogram Red.webp" alt="Reddie Logo" class="db-logo-img">
+                            </div>
+                            <div class="db-tab-switcher">
+                                <span class="db-tab">Prompt</span>
+                                <span class="db-tab active">Agent</span>
+                            </div>
+                        </div>
+                        <div class="db-header-center">
+                            <div class="db-search-bar">
+                                <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
+                                <input type="text" id="dbSearchInput" placeholder="Search conversations, customers, or tickets...">
+                                <span class="settings-gear"><i class="fa-solid fa-sliders"></i></span>
+                            </div>
+                        </div>
+                        <div class="db-header-right">
+                            <div class="db-agent-dropdown">
+                                <button class="btn-agent-select" id="activeAgentBtn">
+                                    <span class="status-dot"></span> Reddie <i class="fa-solid fa-chevron-down"></i>
+                                </button>
+                                <div class="db-agent-dropdown-content">
+                                    <div class="agent-opt active" data-agent="Reddie">Reddie</div>
+                                    <div class="agent-opt" data-agent="Sunnie">Sunnie</div>
+                                    <div class="agent-opt" data-agent="Shadowie">Shadowie</div>
+                                    <div class="agent-opt" data-agent="Titanie">Titanie</div>
+                                    <div class="agent-opt" data-agent="Baddie">Baddie</div>
+                                    <div class="agent-opt" data-agent="Verdanie">Verdanie</div>
+                                </div>
+                            </div>
+                            <div class="user-avatar db-profile-avatar">
+                                <img src="assets/favicon-reddie.webp" alt="Profile Avatar">
+                            </div>
+                        </div>
+                    </header>
+                    
+                    <div class="db-body">
+                        <aside class="db-sidebar">
+                            <div class="sidebar-menu">
+                                <div class="menu-item active">
+                                    <span class="menu-icon"><i class="fa-solid fa-comments"></i></span> Chat & Discussion
+                                </div>
+                                <div class="menu-item">
+                                    <span class="menu-icon"><i class="fa-solid fa-tower-broadcast"></i></span> Real-Time Discussion
+                                </div>
+                                <div class="menu-item">
+                                    <span class="menu-icon"><i class="fa-solid fa-calendar-check"></i></span> Task & Scheduling
+                                </div>
+                                <div class="menu-item">
+                                    <span class="menu-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span> Analyze
+                                </div>
+                                <div class="menu-item">
+                                    <span class="menu-icon"><i class="fa-solid fa-book-open"></i></span> Research
+                                </div>
+                                <div class="menu-item">
+                                    <span class="menu-icon"><i class="fa-solid fa-gears"></i></span> Automation
+                                </div>
+                                <div class="menu-item">
+                                    <span class="menu-icon"><i class="fa-solid fa-network-wired"></i></span> Connectivity
+                                </div>
+                                <div class="menu-item menu-more">
+                                    <span class="menu-icon"><i class="fa-solid fa-ellipsis"></i></span> <em>And many more..</em>
+                                </div>
+                            </div>
+                            
+                            <!-- Profile / Sign In Box -->
+                            <div class="sidebar-profile-box" id="sidebarProfileBox">
+                                <div class="profile-avatar" id="sidebarProfileAvatar">
+                                    <i class="fa-solid fa-circle-user"></i>
+                                </div>
+                                <div class="profile-info">
+                                    <span class="profile-name" id="sidebarProfileName">Guest User</span>
+                                    <span class="profile-status" id="sidebarProfileStatus">Click to Sign In</span>
+                                </div>
+                                <span class="profile-more-icon"><i class="fa-solid fa-chevron-up"></i></span>
+                            </div>
+                            
+                            <div class="sidebar-footer">Built v0.12</div>
+                        </aside>
+                        
+                        <!-- Column 2: Stats Column -->
+                        <div class="db-stats-col">
+                            <div class="stats-tabs">
+                                <span class="stats-tab active">AI Skills Sockets</span>
+                                <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
+                            </div>
+                            <div class="stats-scroll-content">
+                                <div class="billing-card" style="gap: 1rem;">
+                                    <div class="billing-header">
+                                        <h3>Active Sockets</h3>
+                                        <span class="edit-icon"><i class="fa-solid fa-wand-magic-sparkles" style="color: #ff3333;"></i></span>
+                                    </div>
+                                    
+                                    <p style="font-size: 0.8rem; color: #4b5563; margin-top: -0.8rem; margin-bottom: 0.4rem; line-height: 1.45;">
+                                        Select an active socket below to execute custom data transformations directly on the active discussion.
+                                    </p>
+
+                                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                        <!-- Skill 1: Generate PDF -->
+                                        <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="width: 32px; height: 32px; border-radius: 8px; background: rgba(239, 68, 68, 0.1); display: flex; align-items: center; justify-content: center; color: #ef4444;"><i class="fa-solid fa-file-pdf" style="font-size: 1.1rem;"></i></span>
+                                                <div>
+                                                    <h4 style="margin: 0; font-size: 0.85rem; color: #111827; font-weight: 700;">Document Generator</h4>
+                                                    <span style="font-size: 0.68rem; color: #6b7280; font-weight: 500;">Exports discussion to PDF</span>
+                                                </div>
+                                            </div>
+                                            <p style="margin: 0; font-size: 0.75rem; color: #4b5563; line-height: 1.4;">Compile active chat session logs and metadata context into a styled PDF summary.</p>
+                                            <button class="btn-escalate btn-skill-pdf" style="background: #ef4444; color: white; border: none; font-weight: 700; width: 100%; padding: 0.55rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.78rem;"><i class="fa-solid fa-file-pdf"></i> Generate PDF Report</button>
+                                        </div>
+
+                                        <!-- Skill 2: Generate Excel -->
+                                        <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="width: 32px; height: 32px; border-radius: 8px; background: rgba(16, 124, 65, 0.1); display: flex; align-items: center; justify-content: center; color: #107c41;"><i class="fa-solid fa-file-excel" style="font-size: 1.1rem;"></i></span>
+                                                <div>
+                                                    <h4 style="margin: 0; font-size: 0.85rem; color: #111827; font-weight: 700;">Spreadsheet Compiler</h4>
+                                                    <span style="font-size: 0.68rem; color: #6b7280; font-weight: 500;">Exports variables to Excel</span>
+                                                </div>
+                                            </div>
+                                            <p style="margin: 0; font-size: 0.75rem; color: #4b5563; line-height: 1.4;">Parse conversation values, timelines, and ticket properties into a clean spreadsheet.</p>
+                                            <button class="btn-escalate btn-skill-excel" style="background: #107c41; color: white; border: none; font-weight: 700; width: 100%; padding: 0.55rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.78rem;"><i class="fa-solid fa-file-excel"></i> Export to Excel</button>
+                                        </div>
+
+                                        <!-- Skill 3: Sync Server -->
+                                        <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
+                                            <div style="display: flex; align-items: center; gap: 8px;">
+                                                <span style="width: 32px; height: 32px; border-radius: 8px; background: rgba(2, 132, 199, 0.1); display: flex; align-items: center; justify-content: center; color: #0284c7;"><i class="fa-solid fa-database" style="font-size: 1.1rem;"></i></span>
+                                                <div>
+                                                    <h4 style="margin: 0; font-size: 0.85rem; color: #111827; font-weight: 700;">Database Sync</h4>
+                                                    <span style="font-size: 0.68rem; color: #6b7280; font-weight: 500;">Syncs to server cluster</span>
+                                                </div>
+                                            </div>
+                                            <p style="margin: 0; font-size: 0.75rem; color: #4b5563; line-height: 1.4;">Commit active ticket parameters and resolved variables into your server sockets.</p>
+                                            <button class="btn-escalate btn-skill-sync" style="background: #0284c7; color: white; border: none; font-weight: 700; width: 100%; padding: 0.55rem; border-radius: 6px; cursor: pointer; transition: all 0.2s; font-size: 0.78rem;"><i class="fa-solid fa-arrows-rotate"></i> Sync Server Sockets</button>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Column 3: Main Chat/Agent Console -->
+                        <div class="db-chat-col">
+                            <div class="chat-viewport" id="chatViewport">
+                                <div class="chat-welcome-state" id="chatWelcomeState">
+                                    <video src="assets/Reddie-Head-Video.mp4?v=20260826-2" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
+                                    
+                                    <div class="chat-welcome-content">
+                                        <div class="chat-welcome-header">
+                                            <div class="badge-protected">
+                                                <span class="check-icon"><i class="fa-solid fa-shield-halved"></i></span> Chat is Protected
+                                            </div>
+                                            <h2 class="chat-welcome-title">Welcome, Mr. Stark!</h2>
+                                            <p class="chat-welcome-subtitle">How can I help you today?</p>
+                                        </div>
+                                        
+                                        <div class="chat-welcome-footer-chips">
+                                            <div class="suggestion-chips">
+                                                <button class="chip">Suggest reply</button>
+                                                <button class="chip">Summarize</button>
+                                                <button class="chip">Extract key details</button>
+                                                <button class="chip">Detect sentiment</button>
+                                                <button class="chip">Search knowledge base</button>
+                                                <button class="chip">Rephrase professionally</button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="chat-conversation" id="chatConversation"></div>
+                            </div>
+                            
+                            <footer class="chat-footer">
+                                <div class="chat-options-bar">
+                                    <span class="opt-link" id="optAttach"><i class="fa-solid fa-paperclip animate-icon"></i> Attach</span>
+                                    <span class="opt-link" id="optOptions"><i class="fa-solid fa-sliders animate-icon"></i> Options</span>
+                                    <span class="opt-link" id="optModel"><i class="fa-solid fa-cube animate-icon"></i> Model</span>
+                                </div>
+                                <div class="chat-input-bar">
+                                    <input type="text" id="chatInput" placeholder="Ask AI to draft a reply or summarize the issue...">
+                                    <span class="voice-btn"><i class="fa-solid fa-microphone"></i></span>
+                                    <button class="send-btn" id="sendBtn"><i class="fa-solid fa-arrow-up"></i></button>
+                                </div>
+                            </footer>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ABOUT SECTION -->
+        <section class="page-section section-about" id="section-about">
+            <div class="split-about-container">
+                <!-- Left Column (Dark, description text and metadata info) -->
+                <div class="about-split-left">
+                    <div class="about-bg-blur-element"></div>
+                    <h1 class="about-title-left">AI AGENT</h1>
+                    
+                    <div class="about-desc-box">
+                        <span class="about-label">ABOUT</span>
+                        <p class="about-split-desc" id="aboutDescText" style="transition: opacity 0.25s ease-in-out;">
+                            Reddie is the signature AI Agent developed by <strong>WIT.ID</strong>. Engineered to be the ultimate digital companion, Reddie operates as an autonomous force to streamline IT operations, automate complex workflows, and deliver comprehensive 360° technology solutions.
+                        </p>
+                    </div>
+                    
+                    <div class="about-split-footer">
+                        <div class="footer-col-left">
+                            <span class="small-label">CLICK AND</span>
+                            <a href="#section-try" class="footer-link">EXPLORE WORKSPACE ↗</a>
+                        </div>
+                        <div class="footer-col-center">
+                            <a href="https://instagram.com" target="_blank" class="footer-social-link">• INSTAGRAM</a>
+                            <a href="https://telegram.org" target="_blank" class="footer-social-link">• TELEGRAM</a>
+                        </div>
+                        <div class="footer-col-right">
+                            <span class="footer-meta">DEVELOPED BY WIT.ID</span>
+                            <span class="footer-meta">JAKARTA, INDONESIA</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column (Light, mascot character and huge title) -->
+                <div class="about-split-right">
+                    <button class="about-carousel-btn prev-btn" id="aboutPrevBtn" aria-label="Previous Agent"><i class="fa-solid fa-chevron-left"></i></button>
+                    <!-- Floating Mascot graphic -->
+                    <div class="about-mascot-container">
+                        <img src="assets/Character-Reddie.webp" alt="Reddie Mascot" class="about-floating-mascot" id="aboutMascotImg" style="transition: opacity 0.25s ease-in-out;">
+                    </div>
+                    <button class="about-carousel-btn next-btn" id="aboutNextBtn" aria-label="Next Agent"><i class="fa-solid fa-chevron-right"></i></button>
+                    <h1 class="about-title-right" id="aboutTitleRight" style="transition: opacity 0.25s ease-in-out;">REDDIE</h1>
+                </div>
+            </div>
+        </section>
+
+        <!-- CONTACT SECTION -->
+        <section class="page-section section-contact" id="section-contact">
+            <div class="glass-card contact-card">
+                <h2 class="section-title">GET IN TOUCH</h2>
+                <div class="card-line"></div>
+                <p class="contact-subtitle">Let's build the future of AI automation together.</p>
+                
+                <form class="contact-form" id="contactForm">
+                    <div class="form-group">
+                        <label for="name">Name</label>
+                        <input type="text" id="name" required placeholder="Enter your name">
+                    </div>
+                    <div class="form-group">
+                        <label for="email">Email</label>
+                        <input type="email" id="email" required placeholder="Enter your email address">
+                    </div>
+                    <div class="form-group">
+                        <label for="message">Message</label>
+                        <textarea id="message" rows="4" required placeholder="Tell us about your project or inquiry"></textarea>
+                    </div>
+                    <button type="submit" class="submit-btn">
+                        <span>SEND MESSAGE</span>
+                        <div class="btn-glow"></div>
+                    </button>
+                </form>
+                
+                <div class="form-success-message" id="formSuccessMessage">
+                    <div class="success-icon">✓</div>
+                    <h3>Message Sent Successfully!</h3>
+                    <p>Thank you for reaching out. The Reddie team will get back to you shortly.</p>
+                </div>
+            </div>
+        </section>
+        
+    </main>
+
+    <!-- Mobile Bottom Navigation Bar -->
+    <nav class="mobile-bottom-nav" id="mobileBottomNav">
+        <a href="#section-home" class="mobile-nav-item active" data-target="home">
+            <i class="fa-solid fa-house"></i>
+            <span>HOME</span>
+        </a>
+        <a href="#section-try" class="mobile-nav-item" data-target="try">
+            <i class="fa-solid fa-robot"></i>
+            <span>TRY</span>
+        </a>
+        <a href="#section-about" class="mobile-nav-item" data-target="about">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>ABOUT</span>
+        </a>
+        <a href="#section-contact" class="mobile-nav-item" data-target="contact">
+            <i class="fa-solid fa-envelope"></i>
+            <span>CONTACT</span>
+        </a>
+    </nav>
+
+    <!-- LOGIN MODAL -->
+    <div class="login-modal-overlay" id="loginModalOverlay">
+        <div class="login-modal-card">
+            <button class="login-modal-close" id="loginModalClose" aria-label="Close modal"><i class="fa-solid fa-xmark"></i></button>
+            <div class="login-modal-logo">
+                <img src="assets/Reddie Logo_Logogram Red.webp" alt="Reddie Logogram" style="height: 38px;">
+            </div>
+            <h3>Welcome back</h3>
+            <p class="login-modal-subtitle">Log in to your Reddie workspace account</p>
+            
+            <form class="login-modal-form" id="loginModalForm">
+                <div class="login-form-group">
+                    <label for="loginEmail">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                </div>
+                <div class="login-form-group">
+                    <label for="loginPassword">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                </div>
+                <div class="login-form-actions">
+                    <label class="remember-me">
+                        <input type="checkbox"> Remember me
+                    </label>
+                    <a href="#" class="forgot-pass">Forgot password?</a>
+                </div>
+                <button type="submit" class="login-submit-btn" id="loginSubmitBtn">Log In</button>
+            </form>
+            
+            <div class="login-modal-footer">
+                Don't have an account? <a href="#" class="signup-link">Sign up</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main JavaScript File -->
+    <script src="style/script.js?v=20260826-2"></script>
+    <script src="style/live.js?v=20260826-2"></script>
+</body>
+</html>

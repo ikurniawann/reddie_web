@@ -1,0 +1,43 @@
+# ============================================================
+# Tempelkan dua service ini ke /home/wit/docker-infra/docker-compose.yml
+# (sejajar dengan service `demos`), dan `reddie-db-data` ke bagian volumes.
+# Sesuaikan path `build.context` bila folder server dipindah.
+# ============================================================
+
+  reddie-db:
+    image: postgres:16-alpine
+    container_name: reddie-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: reddie
+      POSTGRES_DB: reddie
+      POSTGRES_PASSWORD: ${REDDIE_DB_PASSWORD:?set di .env docker-infra}
+    volumes:
+      - reddie-db-data:/var/lib/postgresql/data
+    networks:
+      - infra-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U reddie"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  reddie-api:
+    build:
+      context: /home/wit/docker-infra/reddie-api
+    container_name: reddie-api
+    restart: unless-stopped
+    env_file:
+      - /home/wit/docker-infra/reddie-api/.env
+    environment:
+      DATABASE_URL: postgres://reddie:${REDDIE_DB_PASSWORD}@reddie-db:5432/reddie
+    expose:
+      - "8080"
+    depends_on:
+      reddie-db:
+        condition: service_healthy
+    networks:
+      - infra-net
+
+# --- tambahkan ke bagian `volumes:` paling bawah ---
+#  reddie-db-data:
