@@ -298,6 +298,7 @@ export const TABLES = {
       { name: 'name',             label: 'Nama tampilan',   type: 'text',   max: 30, help: 'Yang dilihat pengunjung di daftar pilihan agent.' },
       { name: 'slug',             label: 'Kode identitas',  type: 'slug',   max: 30, help: 'Kunci teknis, huruf kecil tanpa spasi. JANGAN diubah setelah dipakai — percakapan lama akan kehilangan rujukannya.' },
       { name: 'image',            label: 'Gambar agent',    type: 'image',           help: 'Muncul di korsel halaman About. Disarankan latar transparan.' },
+      { name: 'icon',             label: 'Ikon kecil',      type: 'image',           help: 'Avatar bulat di pojok kanan atas konsol saat agent ini dipilih. Potret kepala rapat, latar transparan — ukuran tampilnya cuma 32 piksel.' },
       { name: 'video',            label: 'Video karakter',  type: 'text',   max: 200, help: 'Diputar di layar sambutan konsol saat agent ini dipilih. Isi dengan letak berkasnya, misalnya assets/titanie.mp4. Kosongkan untuk memakai video bawaan.' },
       { name: 'welcome_title',    label: 'Sapaan — judul',  type: 'text',   max: 80,  help: 'Baris besar di layar sambutan saat agent ini dipilih, misalnya "Hi, I am Titanie!". Kosongkan untuk memakai sapaan umum.' },
       { name: 'welcome_subtitle', label: 'Sapaan — subjudul', type: 'text', max: 160, help: 'Baris kecil di bawah sapaan. Tempat menyebut keahlian agent ini.' },

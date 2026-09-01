@@ -23,7 +23,7 @@ import { q } from './db.js';
 export async function buildDraft() {
   const [settings, agents, skills] = await Promise.all([
     q('SELECT key, value FROM settings ORDER BY key'),
-    q(`SELECT slug, name, image, video, welcome_title, welcome_subtitle,
+    q(`SELECT slug, name, image, icon, video, welcome_title, welcome_subtitle,
               description, sort, show_in_dropdown, show_in_carousel, coming_soon
        FROM agents WHERE enabled ORDER BY sort, id`),
     q(`SELECT slug, title, subtitle, description, icon, color, button_label
@@ -88,10 +88,10 @@ export async function restoreToDraft(payload) {
   }
   for (const a of payload.agents || []) {
     await q(
-      `UPDATE agents SET name=$1, image=$2, video=$3, welcome_title=$4,
-        welcome_subtitle=$5, description=$6, sort=$7,
-        show_in_dropdown=$8, show_in_carousel=$9, coming_soon=$10 WHERE slug=$11`,
-      [a.name, a.image, a.video, a.welcome_title, a.welcome_subtitle,
+      `UPDATE agents SET name=$1, image=$2, icon=$3, video=$4, welcome_title=$5,
+        welcome_subtitle=$6, description=$7, sort=$8,
+        show_in_dropdown=$9, show_in_carousel=$10, coming_soon=$11 WHERE slug=$12`,
+      [a.name, a.image, a.icon, a.video, a.welcome_title, a.welcome_subtitle,
        a.description, a.sort, a.show_in_dropdown, a.show_in_carousel,
        !!a.coming_soon, a.slug]
     );

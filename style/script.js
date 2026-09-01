@@ -674,40 +674,7 @@ function setupDashboardDemo() {
                         scrollToBottom();
                     }, 1200);
                 }
-                else if (btnText.includes("Authorize & Upgrade")) {
-                    targetBtn.textContent = "UPGRADING...";
-                    targetBtn.disabled = true;
-                    appendMessage("Authorized payment details. Initiating billing workspace upgrades...", "user");
-                    isGenerating = true;
-                    
-                    setTimeout(() => {
-                        appendMessage("Welcome to Reddie Enterprise! 🚀\n\nYour payment of $49/mo has been authorized successfully. We have provisioned your High-Performance Coding Agent, voice integrations, and unlimited database sockets.\n\nType a command like 'Query the database for active sales' or 'Build a new landing page' to start using your premium superpowers!", "agent");
-                        isGenerating = false;
-                        scrollToBottom();
-                        
-                        const statsScrollContent = document.querySelector('.stats-scroll-content');
-                        if (statsScrollContent) {
-                            statsScrollContent.innerHTML = `
-                                <div class="billing-card" style="background: rgba(34, 197, 94, 0.04); padding: 1.2rem; border-radius: 12px;">
-                                    <div class="billing-header">
-                                        <h3 style="color: #22c55e;"><i class="fa-solid fa-circle-check"></i> Enterprise Active</h3>
-                                    </div>
-                                    <div style="padding: 1rem; text-align: center;">
-                                        <div style="font-size: 2.2rem; margin-bottom: 0.5rem; color: #22c55e;"><i class="fa-solid fa-crown"></i></div>
-                                        <h4 style="margin: 0 0 0.2rem 0; color: #111827;">Workspace Premium Plan</h4>
-                                        <p style="font-size: 0.75rem; color: #4b5563; margin-bottom: 1rem;">Status: Active ($49/month)</p>
-                                        
-                                        <div class="dist-grid" style="gap: 0.4rem; text-align: left;">
-                                            <div class="dist-card" style="grid-column: span 2; background: rgba(255,255,255,0.7); padding: 0.5rem;"><span style="color: #22c55e; font-weight: 700; font-size: 0.8rem;"><i class="fa-solid fa-circle-check"></i> Coding Agent Sockets</span></div>
-                                            <div class="dist-card" style="grid-column: span 2; background: rgba(255,255,255,0.7); padding: 0.5rem;"><span style="color: #22c55e; font-weight: 700; font-size: 0.8rem;"><i class="fa-solid fa-circle-check"></i> Database Sockets</span></div>
-                                            <div class="dist-card" style="grid-column: span 2; background: rgba(255,255,255,0.7); padding: 0.5rem;"><span style="color: #22c55e; font-weight: 700; font-size: 0.8rem;"><i class="fa-solid fa-circle-check"></i> Unlimited Bandwidth</span></div>
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }
-                    }, 1200);
-                }
+
                 else if (btnText.includes("Generate API Token")) {
                     const mockToken = "sk_reddie_live_" + Math.random().toString(36).substring(2, 10);
                     appendMessage(`System Alert: New Webhook token generated successfully:\n\n\`${mockToken}\`\n\nKeep this secret safe. Connection is active.`, "agent");
@@ -881,79 +848,99 @@ function setupDashboardDemo() {
                         <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
-                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
-                                data-cms="console.agentic_title">Agentic Control</h3>
-                            <i class="fa-solid fa-tower-broadcast" style="font-size:1.05rem;color:#374151;"></i>
-                        </div>
-                        <div data-agenticpanel>
-                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Menyiapkan…</p>
+                        <div class="soon-panel">
+                            <span class="soon-badge">Coming Soon</span>
+                            <div class="soon-icon"><i class="fa-solid fa-tower-broadcast"></i></div>
+                            <h3 class="soon-title" data-cms="console.agentic_title">Agentic Control</h3>
+                            <p class="soon-body" data-cms="console.agentic_soon">
+                                Reddie will take the wheel — opening panels, running workflows, and
+                                walking you through the console while you simply watch. We are putting
+                                the final guardrails in place before handing over the keys.
+                            </p>
                         </div>
                     </div>
                 `;
                 welcomeTitleText = "Agentic Control";
-                welcomeSubtitleText = "Izinkan Reddie mengendalikan tampilan ini, dan lihat ia bekerja sendiri.";
+                welcomeSubtitleText = "Hands-on-the-wheel automation. Landing soon.";
                 chipsHTML = `
-                    <button class="chip">Apa yang bisa dikendalikan?</button>
-                    <button class="chip">Izin apa saja yang diminta?</button>
-                    <button class="chip">Bagaimana cara menghentikannya?</button>
+                    <button class="chip">What will Agentic Control do?</button>
+                    <button class="chip">When does it launch?</button>
+                    <button class="chip">Notify me at launch</button>
                 `;
                 break;
 
             case "And many more..":
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Upgrade</span>
+                        <span class="stats-tab active">Subscribe</span>
                         <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card" style="background: rgba(245, 158, 11, 0.03); padding: 1.2rem; border-radius: 12px;">
-                            <div class="billing-header">
-                                <h3 style="color: #d97706; display: flex; align-items: center; gap: 6px;"><i class="fa-solid fa-crown"></i> Unlock Premium</h3>
-                            </div>
-                            
-                            <div>
-                                <div class="section-label">LOCKED ENTERPRISE SUPERPOWERS</div>
-                                <div class="dist-grid" style="gap: 0.5rem;">
-                                    <div class="dist-card" style="grid-column: span 2; background: rgba(255,255,255,0.6); padding: 0.6rem;">
-                                        <span class="dist-type" style="font-weight: 700; color: #111827; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-code" style="color: #d97706;"></i> Autonomous Coding Agent</span>
-                                        <span class="dist-val" style="font-size: 0.72rem; color: #4b5563; margin-top: 2px;">Deploy files, compile scripts, and design UI codebases.</span>
+                        <div class="soon-panel soon-panel-list">
+                            <span class="soon-badge">Coming Soon</span>
+                            <h3 class="soon-title" data-cms="console.upgrade_title">Agentic Reddie</h3>
+                            <p class="soon-body" data-cms="console.upgrade_body">
+                                Everything in this demo, running on your own data — plus the parts we
+                                have not switched on yet. Here is what a subscription unlocks.
+                            </p>
+                            <div class="soon-features">
+                                <div class="soon-feature">
+                                    <span class="soon-feature-icon"><i class="fa-solid fa-bolt"></i></span>
+                                    <div>
+                                        <span class="soon-feature-title">Agents That Finish The Job</span>
+                                        <span class="soon-feature-desc">Not just answers. Reddie books the meeting, files the ticket, runs the workflow — then reports back when it is done.</span>
                                     </div>
-                                    <div class="dist-card" style="grid-column: span 2; background: rgba(255,255,255,0.6); padding: 0.6rem;">
-                                        <span class="dist-type" style="font-weight: 700; color: #111827; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-database" style="color: #d97706;"></i> Custom SQL Connectors</span>
-                                        <span class="dist-val" style="font-size: 0.72rem; color: #4b5563; margin-top: 2px;">Direct read/write access to PostgreSQL, MySQL, & MongoDB.</span>
+                                </div>
+                                <div class="soon-feature">
+                                    <span class="soon-feature-icon"><i class="fa-solid fa-diagram-project"></i></span>
+                                    <div>
+                                        <span class="soon-feature-title">One Agent, Every System</span>
+                                        <span class="soon-feature-desc">Calendar, task board, news desk, market data, and your n8n workflows. Connected once, reachable from a single chat box.</span>
                                     </div>
-                                    <div class="dist-card" style="grid-column: span 2; background: rgba(255,255,255,0.6); padding: 0.6rem;">
-                                        <span class="dist-type" style="font-weight: 700; color: #111827; display: flex; align-items: center; gap: 4px;"><i class="fa-solid fa-phone" style="color: #d97706;"></i> Autonomous Voice Intercept</span>
-                                        <span class="dist-val" style="font-size: 0.72rem; color: #4b5563; margin-top: 2px;">Let Reddie handle live phone calls and customer triage.</span>
+                                </div>
+                                <div class="soon-feature">
+                                    <span class="soon-feature-icon"><i class="fa-solid fa-file-lines"></i></span>
+                                    <div>
+                                        <span class="soon-feature-title">Documents That Read Themselves</span>
+                                        <span class="soon-feature-desc">Drop a PDF, spreadsheet, or a photo of a receipt. Get the numbers, the risks, and the summary — without opening the file.</span>
+                                    </div>
+                                </div>
+                                <div class="soon-feature">
+                                    <span class="soon-feature-icon"><i class="fa-solid fa-tower-broadcast"></i></span>
+                                    <div>
+                                        <span class="soon-feature-title">Agentic Control</span>
+                                        <span class="soon-feature-desc">Hand Reddie the wheel and watch it operate the console for you, step by step, with every permission asked out loud.</span>
+                                    </div>
+                                </div>
+                                <div class="soon-feature">
+                                    <span class="soon-feature-icon"><i class="fa-solid fa-users-gear"></i></span>
+                                    <div>
+                                        <span class="soon-feature-title">Your Own Agent Roster</span>
+                                        <span class="soon-feature-desc">Support, DevOps, QA, security, analytics — each with its own memory, personality, and place in your workflow.</span>
+                                    </div>
+                                </div>
+                                <div class="soon-feature">
+                                    <span class="soon-feature-icon"><i class="fa-solid fa-shield-halved"></i></span>
+                                    <div>
+                                        <span class="soon-feature-title">Guardrails Built In</span>
+                                        <span class="soon-feature-desc">Every action logged, every permission requested, nothing done behind your back. Your data never trains anyone else model.</span>
                                     </div>
                                 </div>
                             </div>
-                            
-                            <div class="upgrade-form-section">
-                                <div class="section-label">PAYMENT DETAILS</div>
-                                <div style="background: rgba(255,255,255,0.85); border-radius: 8px; padding: 0.8rem; font-size: 0.8rem; border: 1px solid rgba(0,0,0,0.05);">
-                                    <div style="font-weight: 800; color: #111827; margin-bottom: 2px;">Reddie Workspace Plan</div>
-                                    <div style="color: #d97706; font-size: 1.1rem; font-weight: 800; margin-bottom: 6px;">$49 <span style="font-size: 0.75rem; color: #6b7280; font-weight: 500;">/ month per user</span></div>
-                                    
-                                    <div style="display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.5rem;">
-                                        <input type="text" placeholder="Cardholder Name" value="Tony Stark" style="width: 100%; padding: 0.35rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 4px; font-size: 0.75rem; font-family: inherit; background: #f9fafb; color: #111827;" disabled>
-                                        <input type="text" placeholder="Card Number" value="•••• •••• •••• 4242" style="width: 100%; padding: 0.35rem; border: 1px solid rgba(0,0,0,0.08); border-radius: 4px; font-size: 0.75rem; font-family: inherit; background: #f9fafb; color: #111827;" disabled>
-                                    </div>
-                                </div>
-                            </div>
-                            
-                            <button class="btn-escalate btn-upgrade" style="background: linear-gradient(135deg, #f59e0b, #d97706); border: none; color: white;">Authorize & Upgrade</button>
+                            <p class="soon-foot" data-cms="console.upgrade_foot">
+                                Launching October 30, 2026. Leave your email in the chat and you will
+                                be among the first to go live.
+                            </p>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "Enterprise Suite";
-                welcomeSubtitleText = "Upgrade your active workspace to deploy autonomous execution nodes.";
+                welcomeTitleText = "Agentic Reddie";
+                welcomeSubtitleText = "The full suite is almost here. Here is what is coming.";
                 chipsHTML = `
-                    <button class="chip">Unlock Autonomous Coding</button>
-                    <button class="chip">Enable SQL Database access</button>
-                    <button class="chip">Pricing details</button>
-                    <button class="chip">Request Enterprise Quote</button>
+                    <button class="chip">What do I get when I subscribe?</button>
+                    <button class="chip">When does it launch?</button>
+                    <button class="chip">Notify me at launch</button>
+                    <button class="chip">Talk to the team</button>
                 `;
                 break;
         }
@@ -1095,17 +1082,17 @@ function setupDashboardDemo() {
         }
         
         // And many more.. chips
-        if (lowerQuery.includes('unlock autonomous coding')) {
-            return `To unlock the Autonomous Coding Agent, please click the orange 'Authorize & Upgrade' button on the left panel. The premium tier includes complete file system read/write access and automated container builds.`;
+        if (lowerQuery.includes('unlock autonomous coding') || lowerQuery.includes('what do i get when i subscribe')) {
+            return `The Autonomous Coding Agent ships with Agentic Reddie — file system read/write, container builds, and deploys it runs on its own. It is not switched on yet; the panel on the left lists everything a subscription unlocks at launch.`;
         }
         if (lowerQuery.includes('enable sql database')) {
-            return `Custom SQL Database connectors require the Enterprise tier. Upgrading your workspace will instantly unlock PostgreSQL, MySQL, and MongoDB hooks for Reddie.`;
+            return `Direct database connectors — PostgreSQL, MySQL, and MongoDB — are part of the Agentic Reddie subscription. They arrive at launch, alongside the rest of the list on the left.`;
         }
         if (lowerQuery.includes('pricing details')) {
-            return `Reddie Premium is priced at $49/month per workspace. This includes unlimited API connectors, high-performance execution nodes, and prioritised context windows.`;
+            return `Pricing is being finalised ahead of the October 30, 2026 launch. Leave your email here and we will send the plans the moment they are set — no card needed to look around in the meantime.`;
         }
         if (lowerQuery.includes('request enterprise quote')) {
-            return `For dedicated clusters or custom service level agreements (SLAs), please contact the Wit. Enterprise sales team at sales@wit.ai or click 'Authorize & Upgrade' to proceed instantly.`;
+            return `Dedicated clusters and custom SLAs are handled case by case. Reach the WIT.ID team at sales@wit.id, or drop your details in the contact form and we will come to you.`;
         }
         
         // Turn-aware fallback responses for free-form queries

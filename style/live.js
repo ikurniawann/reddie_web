@@ -25,6 +25,9 @@
     // jalan lebih dulu daripada blok video di bagian bawah berkas.
     var videoBawaan = null;
 
+    // Ikon avatar bawaan, dengan alasan dan penempatan yang sama.
+    var ikonBawaan = null;
+
     var state = {
         ready: false,          // true bila /api/content berhasil dimuat
         models: [],
@@ -276,6 +279,7 @@
                        '" data-agent="' + esc(a.slug) + '"' +
                        (soon ? ' data-soon="1" aria-disabled="true"' : '') +
                        (a.video ? ' data-video="' + esc(a.video) + '"' : '') +
+                       (a.icon ? ' data-icon="' + esc(a.icon) + '"' : '') +
                        '><span>' + esc(a.name) + '</span>' +
                        (soon ? '<span class="agent-opt-badge">Coming Soon</span>' : '') +
                        '</div>';
@@ -302,6 +306,7 @@
             // Agent pertama sudah aktif sejak halaman dibuka, jadi videonya
             // dipasang sekarang — bukan menunggu dropdown disentuh.
             pasangVideo(dropdownAgents[0].video);
+            pasangIkon(dropdownAgents[0].icon);
             var btn = document.getElementById('activeAgentBtn');
             if (btn) {
                 var dot = btn.querySelector('.status-dot');
@@ -1011,6 +1016,15 @@
         catch (e) { return String(u || ''); }
     }
 
+    function pasangIkon(letak) {
+        var img = document.querySelector('.db-profile-avatar img');
+        if (!img) return;
+        if (ikonBawaan === null) ikonBawaan = img.getAttribute('src') || '';
+        var tujuan = String(letak || '').trim() || ikonBawaan;
+        if (!tujuan || jalur(img.getAttribute('src')) === jalur(tujuan)) return;
+        img.setAttribute('src', tujuan);
+    }
+
     function pasangVideo(letak) {
         var v = document.querySelector('.chat-welcome-video-bg');
         if (!v) return;
@@ -1630,6 +1644,7 @@
         if (opt && opt.dataset.agent) {
             window.__reddieAgent = opt.dataset.agent.toLowerCase();
             pasangVideo(opt.dataset.video);
+            pasangIkon(opt.dataset.icon);
         }
         var mo = e.target.closest('.model-option');
         if (mo && mo.dataset.modelId) window.__reddieModelId = mo.dataset.modelId;
