@@ -81,7 +81,7 @@ const norm = (t) => ({
   id: t.id ?? t.taskId ?? null,
   title: String(t.title ?? t.name ?? t.summary ?? '(tanpa judul)').slice(0, 200),
   status: String(t.status ?? t.state ?? '').toLowerCase(),
-  done: /done|complete|selesai|closed/.test(String(t.status ?? t.state ?? '').toLowerCase()),
+  done: /^(done|cancelled)$/.test(String(t.status ?? t.state ?? '').toLowerCase()),
   priority: t.priority ?? t.prioritas ?? null,
   due: t.dueDate ?? t.due_at ?? t.due ?? null,
   assignee: t.assignee?.name ?? t.assigneeName ?? t.owner?.name ?? null,
@@ -95,10 +95,19 @@ export async function listEvents(cfg) {
   return asList(d).map(e => ({ id: e.id, name: e.name || e.title || '' })).filter(e => e.id);
 }
 
-const RUNNING = /^(todo|in_progress|pending|review|doing|blocked)$/;
+// Daftar resmi dari API. Divalidasi di sini supaya kesalahan tertangkap
+// sebelum permintaan dikirim, dengan pesan yang menyebut pilihannya.
+export const STATUSES = ['backlog', 'todo', 'in_progress', 'in_review', 'blocked', 'done', 'cancelled'];
+export const PRIORITIES = ['low', 'medium', 'high', 'urgent'];
+const CLOSED = /^(done|cancelled)$/;
 
 export async function listTasks(cfg, { limit = 5, onlyRunning = true } = {}) {
-  const events = (await listEvents(cfg)).slice(0, 12);   // batas kewajaran
+  // Bila sebuah event dipilih di pengaturan, HANYA event itu yang dibaca —
+  // ini yang menjaga proyek lain tidak ikut terlihat di halaman publik.
+  const all = await listEvents(cfg);
+  const events = cfg.eventId
+    ? all.filter(e => e.id === cfg.eventId)
+    : all.slice(0, 12);
   const perEvent = await Promise.all(events.map(async (ev) => {
     try {
       const d = await call(cfg, `/tasks?eventId=${encodeURIComponent(ev.id)}`);
@@ -109,19 +118,22 @@ export async function listTasks(cfg, { limit = 5, onlyRunning = true } = {}) {
   }));
 
   const all0 = perEvent.flat();
-  const doneCount = all0.filter(t => t.done).length;
-  let all = onlyRunning ? all0.filter(t => !t.done && RUNNING.test(t.status)) : all0;
+  const doneCount = all0.filter(t => CLOSED.test(t.status)).length;
+  // "Berjalan" = apa pun yang belum ditutup. Menyebut daftar status yang
+  // boleh tampil terbukti rapuh: status baru di sisi sana langsung hilang
+  // dari panel tanpa ada yang sadar.
+  let allT = onlyRunning ? all0.filter(t => !CLOSED.test(t.status)) : all0;
 
   // Yang paling dekat tenggatnya lebih dulu; tanpa tenggat ditaruh belakangan.
-  all.sort((x, y) => {
+  allT.sort((x, y) => {
     if (!x.due && !y.due) return 0;
     if (!x.due) return 1;
     if (!y.due) return -1;
     return new Date(x.due) - new Date(y.due);
   });
   return {
-    tasks: all.slice(0, limit),
-    running: all.length,
+    tasks: allT.slice(0, limit),
+    running: allT.length,
     done: doneCount,
     total: all0.length,
     events,
@@ -143,7 +155,7 @@ export async function createTask(cfg, { title, priority, due, eventId, divisionI
   }
   const body = {
     eventId: ev,
-    divisionId: divisionId || cfg.divisionId || 'production',
+    divisionId: divisionId || cfg.divisionId || 'finance',
     title: t,
   };
   if (priority) body.priority = String(priority).slice(0, 20);
@@ -155,8 +167,22 @@ export async function createTask(cfg, { title, priority, due, eventId, divisionI
 export async function updateTask(cfg, id, patch) {
   if (!id) throw new TaskError('ID task tidak dikenali.', 400);
   const body = {};
-  if (patch.status) body.status = String(patch.status).slice(0, 30);
+  if (patch.status) {
+    const st = String(patch.status).toLowerCase();
+    if (!STATUSES.includes(st)) {
+      throw new TaskError(`Status "${patch.status}" tidak dikenal. Pilihannya: ${STATUSES.join(', ')}.`, 400);
+    }
+    body.status = st;
+  }
+  if (patch.priority) {
+    const pr = String(patch.priority).toLowerCase();
+    if (!PRIORITIES.includes(pr)) {
+      throw new TaskError(`Prioritas "${patch.priority}" tidak dikenal. Pilihannya: ${PRIORITIES.join(', ')}.`, 400);
+    }
+    body.priority = pr;
+  }
   if (patch.title) body.title = String(patch.title).slice(0, 200);
+  if (patch.due !== undefined) body.dueDate = patch.due === null ? null : String(patch.due).slice(0, 40);
   if (!Object.keys(body).length) throw new TaskError('Tidak ada perubahan yang dikirim.', 400);
   const d = await call(cfg, `/tasks/${encodeURIComponent(id)}`, { method: 'PATCH', body });
   return norm(d.task || d.data || d);
@@ -198,6 +224,36 @@ export const TASK_TOOLS = [
           priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
           due: { type: 'string', description: 'Tenggat format ISO, misalnya 2026-09-15T09:00:00Z. Kosongkan bila tidak disebut.' },
         },
+        required: ['title'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'update_task',
+      description: 'Mengubah task yang sudah ada: judul, status, prioritas, atau tenggat. Sebutkan judul task yang mau diubah.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Judul task yang mau diubah, untuk mencarinya.' },
+          new_title: { type: 'string', description: 'Judul baru, bila judulnya yang diubah.' },
+          status: { type: 'string', enum: ['backlog', 'todo', 'in_progress', 'in_review', 'blocked', 'done', 'cancelled'] },
+          priority: { type: 'string', enum: ['low', 'medium', 'high', 'urgent'] },
+          due: { type: 'string', description: 'Tenggat baru format ISO, misalnya 2026-09-15T09:00:00Z.' },
+        },
+        required: ['title'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'cancel_task',
+      description: 'Membatalkan sebuah task. Sistem task tidak mendukung penghapusan permanen, jadi task ditandai cancelled dan hilang dari daftar berjalan. Katakan ini ke pengguna bila ia meminta hapus.',
+      parameters: {
+        type: 'object',
+        properties: { title: { type: 'string', description: 'Judul task yang mau dibatalkan.' } },
         required: ['title'],
       },
     },
@@ -255,6 +311,27 @@ export async function runTaskTool(cfg, name, args) {
     if (name === 'create_task') {
       const t = await createTask(cfg, { title: args.title, priority: args.priority, due: args.due });
       return { ok: true, dibuat: t.title || args.title };
+    }
+    if (name === 'update_task' || name === 'cancel_task') {
+      const r = await listTasks(cfg, { limit: 50 });
+      const hit = matchTask(r.tasks, args.title);
+      if (!hit) {
+        return { ok: false,
+          error: `Tidak ada task berjalan yang cocok dengan "${args.title}".`,
+          pilihan: r.tasks.slice(0, 10).map(t => t.title) };
+      }
+      if (name === 'cancel_task') {
+        await updateTask(cfg, hit.id, { status: 'cancelled' });
+        return { ok: true, dibatalkan: hit.title,
+          catatan: 'Task ditandai cancelled, bukan dihapus permanen — sistem task tidak menyediakan penghapusan.' };
+      }
+      await updateTask(cfg, hit.id, {
+        title: args.new_title, status: args.status, priority: args.priority,
+        ...(args.due !== undefined ? { due: args.due } : {}),
+      });
+      return { ok: true, diubah: hit.title, menjadi: {
+        judul: args.new_title || undefined, status: args.status || undefined,
+        prioritas: args.priority || undefined, tenggat: args.due || undefined } };
     }
     if (name === 'complete_task') {
       const r = await listTasks(cfg, { limit: 50 });

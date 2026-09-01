@@ -294,10 +294,18 @@
     // masing-masing dengan warna dan ikonnya sendiri.
     function taskState(t) {
         var st = String(t.status || '').toLowerCase();
-        if (t.done) return { label: 'Selesai', color: '#16a34a', icon: 'fa-circle-check' };
-        if (/progress|active|aktif|doing|jalan/.test(st)) return { label: 'Active', color: '#16a34a', icon: 'fa-circle-check' };
-        if (/pending|review|tunggu|hold|blocked/.test(st)) return { label: 'Pending', color: '#ca8a04', icon: 'fa-circle-notch' };
-        return { label: 'Queued', color: '#6b7280', icon: 'fa-clock' };
+        var M = {
+            done:        { label: 'Selesai',     color: '#16a34a', icon: 'fa-circle-check' },
+            cancelled:   { label: 'Dibatalkan',  color: '#9ca3af', icon: 'fa-ban' },
+            in_progress: { label: 'Active',      color: '#16a34a', icon: 'fa-circle-check' },
+            in_review:   { label: 'In Review',   color: '#7c3aed', icon: 'fa-eye' },
+            blocked:     { label: 'Blocked',     color: '#dc2626', icon: 'fa-circle-exclamation' },
+            todo:        { label: 'Queued',      color: '#6b7280', icon: 'fa-clock' },
+            backlog:     { label: 'Backlog',     color: '#6b7280', icon: 'fa-layer-group' },
+        };
+        // Status tak dikenal ditampilkan apa adanya, bukan disembunyikan —
+        // supaya status baru di sisi sistem task tetap terlihat.
+        return M[st] || { label: st || 'Pending', color: '#ca8a04', icon: 'fa-circle-notch' };
     }
 
     // "Besok, 14.00" lebih mudah dibaca daripada tanggal penuh, dan itu yang
@@ -551,7 +559,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f9';
+        sc.src = 'style/editor.js?v=20260901-g1';
         document.body.appendChild(sc);
     }
 

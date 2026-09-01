@@ -161,8 +161,10 @@ export function buildApp() {
         'Panggil list_tasks sebelum menjawab pertanyaan tentang task, dan sebelum ' +
         'menandai selesai supaya judulnya persis — hasilnya memuat SEMUA task ' +
         'berjalan, jadi kalau sebuah judul tidak ada di sana, memang tidak ada. ' +
-        'Buat atau selesaikan task HANYA ' +
-        'bila pengguna memintanya dengan jelas. Setelah tool dijalankan, laporkan ' +
+        'Buat, ubah, selesaikan, atau batalkan task HANYA ' +
+        'bila pengguna memintanya dengan jelas. Sistem task TIDAK bisa menghapus ' +
+        'permanen — bila pengguna minta hapus, pakai cancel_task dan katakan bahwa ' +
+        'task dibatalkan, bukan dihapus. Setelah tool dijalankan, laporkan ' +
         'hasilnya apa adanya — jangan mengarang task yang tidak ada di hasil tool.';
     }
 
