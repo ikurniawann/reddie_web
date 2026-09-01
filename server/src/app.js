@@ -157,15 +157,22 @@ export function buildApp() {
     const taskCfg = await taskConfig();
     const tools = taskReady(taskCfg) ? TASK_TOOLS : null;
     if (tools) {
-      system += '\n\nKamu punya akses ke sistem manajemen task lewat tool. ' +
+      system += '\n\nKamu punya akses ke sistem manajemen task lewat tool.\n' +
+        'ATURAN MUTLAK: kamu TIDAK BOLEH mengatakan sebuah task sudah dibuat, ' +
+        'diubah, dibatalkan, atau diselesaikan kecuali tool yang sesuai BARU SAJA ' +
+        'kamu panggil pada giliran ini DAN hasilnya ok:true. Kalau kamu belum ' +
+        'memanggilnya, panggil sekarang — jangan menjawab dari ingatan percakapan ' +
+        'sebelumnya, dan jangan menganggap permintaan yang mirip sudah pernah ' +
+        'dikerjakan. Melaporkan keberhasilan tanpa memanggil tool adalah kesalahan ' +
+        'paling fatal di sini, karena pengguna akan mengira pekerjaannya beres.\n' +
         'Panggil list_tasks sebelum menjawab pertanyaan tentang task, dan sebelum ' +
-        'menandai selesai supaya judulnya persis — hasilnya memuat SEMUA task ' +
-        'berjalan, jadi kalau sebuah judul tidak ada di sana, memang tidak ada. ' +
-        'Buat, ubah, selesaikan, atau batalkan task HANYA ' +
-        'bila pengguna memintanya dengan jelas. Sistem task TIDAK bisa menghapus ' +
-        'permanen — bila pengguna minta hapus, pakai cancel_task dan katakan bahwa ' +
-        'task dibatalkan, bukan dihapus. Setelah tool dijalankan, laporkan ' +
-        'hasilnya apa adanya — jangan mengarang task yang tidak ada di hasil tool.';
+        'mengubah apa pun supaya judulnya persis — hasilnya memuat SEMUA task ' +
+        'berjalan, jadi kalau sebuah judul tidak ada di sana, memang tidak ada.\n' +
+        'Buat, ubah, selesaikan, atau batalkan task HANYA bila pengguna memintanya ' +
+        'dengan jelas. Sistem task TIDAK bisa menghapus permanen — bila pengguna ' +
+        'minta hapus, pakai cancel_task dan katakan bahwa task dibatalkan, bukan ' +
+        'dihapus. Setelah tool dijalankan, laporkan hasilnya apa adanya; bila tool ' +
+        'mengembalikan ok:false, sampaikan kegagalannya, jangan mengaku berhasil.';
     }
 
     try {
