@@ -290,56 +290,92 @@
     // Semua panggilan lewat server kita sendiri; token sistem task tidak
     // pernah sampai ke browser.
 
+    // Status sistem task dipetakan ke tiga keadaan yang dipahami orang awam,
+    // masing-masing dengan warna dan ikonnya sendiri.
+    function taskState(t) {
+        var st = String(t.status || '').toLowerCase();
+        if (t.done) return { label: 'Selesai', color: '#16a34a', icon: 'fa-circle-check' };
+        if (/progress|active|aktif|doing|jalan/.test(st)) return { label: 'Active', color: '#16a34a', icon: 'fa-circle-check' };
+        if (/pending|review|tunggu|hold|blocked/.test(st)) return { label: 'Pending', color: '#ca8a04', icon: 'fa-circle-notch' };
+        return { label: 'Queued', color: '#6b7280', icon: 'fa-clock' };
+    }
+
+    // "Besok, 14.00" lebih mudah dibaca daripada tanggal penuh, dan itu yang
+    // sebenarnya ingin diketahui orang saat melihat daftar task.
+    function whenLabel(t) {
+        if (!t.due) return 'Tanpa tenggat';
+        var d = new Date(t.due);
+        if (isNaN(d)) return String(t.due).slice(0, 40);
+        var now = new Date();
+        var hari = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+        var ini = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        var beda = Math.round((hari - ini) / 86400000);
+        var jam = d.getHours() || d.getMinutes()
+            ? ', ' + d.toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '';
+        if (beda === 0) return 'Hari ini' + jam;
+        if (beda === 1) return 'Besok' + jam;
+        if (beda === -1) return 'Kemarin' + jam;
+        if (beda > 1 && beda < 7) return d.toLocaleDateString('id-ID', { weekday: 'long' }) + jam;
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) + jam;
+    }
+
     function taskRow(t) {
-        var due = t.due ? new Date(t.due).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '';
-        var pri = (t.priority || '').toString().toLowerCase();
-        var priColor = pri.indexOf('high') === 0 || pri === 'tinggi' ? '#dc2626'
-                     : pri.indexOf('low') === 0 || pri === 'rendah' ? '#6b7280' : '#b45309';
-        return '<div style="display:flex;align-items:flex-start;gap:.55rem;padding:.5rem 0;' +
-               'border-top:1px solid rgba(0,0,0,.06);">' +
-               '<input type="checkbox" data-done="' + esc(t.id) + '"' + (t.done ? ' checked disabled' : '') +
-               ' style="margin-top:.2rem;cursor:' + (t.done ? 'default' : 'pointer') + ';flex:0 0 auto;">' +
-               '<div style="flex:1;min-width:0;">' +
-               '<div style="font-size:.78rem;color:#111827;font-weight:600;line-height:1.35;' +
-               (t.done ? 'text-decoration:line-through;opacity:.55;' : '') + '">' + esc(t.title) + '</div>' +
-               '<div style="font-size:.66rem;color:#6b7280;margin-top:.1rem;">' +
-               (t.status ? esc(t.status) : '') +
-               (due ? ' · jatuh tempo ' + esc(due) : '') +
-               (t.assignee ? ' · ' + esc(t.assignee) : '') + '</div></div>' +
-               (pri ? '<span style="flex:0 0 auto;font-size:.6rem;font-weight:700;text-transform:uppercase;' +
-                      'color:' + priColor + ';border:1px solid ' + priColor + '33;border-radius:99px;' +
-                      'padding:.1rem .4rem;">' + esc(pri) + '</span>' : '') +
-               '</div>';
+        var s = taskState(t);
+        return '<div style="background:rgba(0,0,0,.045);border:1px solid rgba(0,0,0,.05);border-radius:11px;' +
+               'padding:.7rem .8rem;margin-bottom:.6rem;">' +
+               '<div style="font-size:.8rem;color:#6b7280;line-height:1.3;">' + esc(t.title) + '</div>' +
+               '<div style="font-size:.98rem;color:#111827;font-weight:700;line-height:1.35;margin-top:.1rem;' +
+               (t.done ? 'text-decoration:line-through;opacity:.5;' : '') + '">' + esc(whenLabel(t)) + '</div>' +
+               '<div style="display:flex;align-items:center;justify-content:space-between;margin-top:.3rem;">' +
+                 '<span style="font-size:.8rem;font-weight:700;color:' + s.color + ';display:flex;align-items:center;gap:.3rem;">' +
+                   '<i class="fa-solid ' + s.icon + '"></i>' + s.label + '</span>' +
+                 (t.done ? '' :
+                   '<button data-done="' + esc(t.id) + '" style="background:none;border:1px solid rgba(0,0,0,.12);' +
+                   'border-radius:99px;padding:.12rem .55rem;font:600 .66rem system-ui;color:#374151;cursor:pointer;">' +
+                   'Tandai selesai</button>') +
+               '</div></div>';
     }
 
     function renderTasks(box, d) {
         if (!d.configured) {
-            box.innerHTML = '<p style="font-size:.75rem;color:#6b7280;margin:0;line-height:1.5;">' +
-                'Panel task belum tersambung. Isi alamat API dan nomor akun di panel admin, ' +
+            box.innerHTML = '<p style="font-size:.78rem;color:#6b7280;margin:0;line-height:1.5;">' +
+                'Panel task belum tersambung. Isi alamat API dan nomor akun demo di panel admin, ' +
                 'bagian <b>Integrasi &amp; otomasi</b>.</p>';
             return;
         }
+        var S = (state.settings.console || {});
         var tasks = d.tasks || [];
-        var open = tasks.filter(function (t) { return !t.done; });
+        var done = tasks.filter(function (t) { return t.done; }).length;
+        var pct = tasks.length ? Math.round(done / tasks.length * 100) : 0;
+        var lbl = function (k, f) { return esc(S[k] || f); };
+
         box.innerHTML =
-            '<div style="display:flex;gap:.5rem;margin-bottom:.3rem;">' +
-              '<div style="flex:1;background:rgba(0,0,0,.03);border-radius:8px;padding:.45rem .6rem;">' +
-                '<div style="font-size:.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Belum selesai</div>' +
-                '<div style="font-size:1.1rem;font-weight:800;color:#111827;">' + open.length + '</div></div>' +
-              '<div style="flex:1;background:rgba(0,0,0,.03);border-radius:8px;padding:.45rem .6rem;">' +
-                '<div style="font-size:.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Total</div>' +
-                '<div style="font-size:1.1rem;font-weight:800;color:#111827;">' + tasks.length + '</div></div>' +
-            '</div>' +
+            '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin-bottom:.55rem;">' +
+              lbl('task_section', 'UPCOMING TASKS') + '</div>' +
             (tasks.length
-              ? tasks.slice(0, 12).map(taskRow).join('')
-              : '<p style="font-size:.75rem;color:#6b7280;margin:.4rem 0;">Belum ada task. Tambahkan yang pertama di bawah.</p>') +
-            '<div style="display:flex;gap:.4rem;margin-top:.7rem;">' +
-              '<input data-newtask placeholder="Tambah task baru…" style="flex:1;min-width:0;font:inherit;' +
-              'font-size:.75rem;padding:.4rem .55rem;border:1px solid rgba(0,0,0,.12);border-radius:6px;">' +
-              '<button data-addtask style="flex:0 0 auto;background:#ff3333;color:#fff;border:none;' +
-              'border-radius:6px;padding:.4rem .7rem;font:700 .72rem system-ui;cursor:pointer;">Tambah</button>' +
+              ? tasks.slice(0, 6).map(taskRow).join('')
+              : '<p style="font-size:.78rem;color:#6b7280;margin:0 0 .6rem;">Belum ada task. Buat yang pertama di bawah.</p>') +
+
+            '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin:1.1rem 0 .55rem;">' +
+              lbl('task_progress', 'WEEKLY TASK COMPLETION') + '</div>' +
+            '<div style="background:rgba(255,255,255,.75);border:1px solid rgba(0,0,0,.05);border-radius:11px;padding:.8rem .85rem;">' +
+              '<div style="display:flex;align-items:baseline;justify-content:space-between;margin-bottom:.5rem;">' +
+                '<span style="font-size:.88rem;font-weight:700;color:#111827;">Progress Score</span>' +
+                '<span style="font-size:.95rem;font-weight:800;color:#111827;">' + pct + '%</span></div>' +
+              '<div style="height:9px;background:#d6d3d1;border-radius:99px;overflow:hidden;">' +
+                '<div style="height:100%;width:' + pct + '%;background:#a855f7;border-radius:99px;transition:width .4s;"></div>' +
+              '</div>' +
+              '<div style="font-size:.68rem;color:#6b7280;margin-top:.45rem;">' + done + ' dari ' + tasks.length + ' task selesai</div>' +
             '</div>' +
-            '<p data-taskmsg style="font-size:.68rem;color:#6b7280;margin:.4rem 0 0;"></p>';
+
+            '<div data-newwrap style="display:none;gap:.4rem;margin-top:.9rem;">' +
+              '<input data-newtask placeholder="Judul task baru…" style="flex:1;min-width:0;font:inherit;font-size:.78rem;' +
+              'padding:.5rem .6rem;border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
+            '</div>' +
+            '<button data-addtask style="width:100%;margin-top:.9rem;background:#16192a;color:#fff;border:none;' +
+              'border-radius:11px;padding:.75rem;font:800 .88rem system-ui;cursor:pointer;">' +
+              lbl('task_button', 'Create New Task') + '</button>' +
+            '<p data-taskmsg style="font-size:.7rem;color:#6b7280;margin:.5rem 0 0;text-align:center;"></p>';
     }
 
     function loadTasks() {
@@ -360,12 +396,13 @@
         if (el) { el.textContent = t || ''; el.style.color = bad ? '#b91c1c' : '#6b7280'; }
     }
 
-    document.addEventListener('change', function (e) {
-        var cb = e.target.closest('[data-done]');
-        if (!cb || cb.disabled) return;
-        cb.disabled = true;
-        taskMsg('Menandai selesai…');
-        fetch(API + '/tasks/' + encodeURIComponent(cb.dataset.done), {
+    document.addEventListener('click', function (e) {
+        var btn = e.target.closest('[data-done]');
+        if (!btn || btn.disabled) return;
+        e.preventDefault();
+        btn.disabled = true; btn.textContent = 'Menyimpan…';
+        taskMsg('');
+        fetch(API + '/tasks/' + encodeURIComponent(btn.dataset.done), {
             method: 'PATCH',
             headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ status: 'done' }),
@@ -373,8 +410,11 @@
             return r.json().catch(function () { return {}; }).then(function (d) {
                 if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
             });
-        }).then(function () { taskMsg('Tersimpan.'); loadTasks(); })
-          .catch(function (err) { cb.disabled = false; cb.checked = false; taskMsg(err.message, true); });
+        }).then(function () { loadTasks(); })
+          .catch(function (err) {
+              btn.disabled = false; btn.textContent = 'Tandai selesai';
+              taskMsg(err.message, true);
+          });
     });
 
     function addTask() {
@@ -396,7 +436,19 @@
     }
 
     document.addEventListener('click', function (e) {
-        if (e.target.closest('[data-addtask]')) { e.preventDefault(); addTask(); }
+        if (!e.target.closest('[data-addtask]')) return;
+        e.preventDefault();
+        var wrap = document.querySelector('[data-newwrap]');
+        var input = document.querySelector('[data-newtask]');
+        if (!wrap || !input) return;
+        // Klik pertama membuka kolom isian, klik berikutnya mengirim —
+        // sehingga tombol utama tetap satu dan tidak ada form menganggur.
+        if (wrap.style.display === 'none') {
+            wrap.style.display = 'flex';
+            input.focus();
+            return;
+        }
+        addTask();
     });
     document.addEventListener('keydown', function (e) {
         if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-newtask]')) {
@@ -492,7 +544,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f7';
+        sc.src = 'style/editor.js?v=20260901-f8';
         document.body.appendChild(sc);
     }
 

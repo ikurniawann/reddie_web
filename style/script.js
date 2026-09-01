@@ -682,26 +682,21 @@ function setupDashboardDemo() {
         
         switch (tabName) {
             case "Real-Time Discussion":
-                // Panel Task Focus. Kerangkanya dirender di sini; isinya diisi
-                // live.js dari /api/tasks setelah DOM siap, dan bertanda
-                // data-taskpanel supaya mudah ditemukan tanpa selektor rapuh.
+                // Kerangka panel Task Scheduler. Isinya diisi live.js dari
+                // /api/tasks; data-taskpanel jadi penanda tempatnya.
                 statsHTML = `
                     <div class="stats-tabs">
                         <span class="stats-tab active" data-cms="console.task_tab">Task Focus</span>
                         <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card" style="gap: 0.9rem;">
-                            <div class="billing-header">
-                                <h3 data-cms="console.task_title">Task Aktif</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-list-check" style="color: #ff3333;"></i></span>
-                            </div>
-                            <p style="font-size: 0.8rem; color: #4b5563; margin-top: -0.8rem; margin-bottom: 0.2rem; line-height: 1.45;" data-cms="console.task_intro">
-                                Terhubung langsung ke sistem manajemen task. Tandai selesai atau tambah task baru dari sini.
-                            </p>
-                            <div data-taskpanel>
-                                <p style="font-size:0.78rem;color:#6b7280;margin:0;">Memuat task…</p>
-                            </div>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1.1rem;">
+                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
+                                data-cms="console.task_title">Task Scheduler</h3>
+                            <i class="fa-solid fa-calendar-days" style="font-size:1.05rem;color:#374151;"></i>
+                        </div>
+                        <div data-taskpanel>
+                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Memuat task…</p>
                         </div>
                     </div>
                 `;
