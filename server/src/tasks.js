@@ -12,6 +12,7 @@
 // ============================================================
 
 import { q } from './db.js';
+import { googleReady, createCalendarEvent } from './google.js';
 
 export class TaskError extends Error {
   constructor(message, status = 502) { super(message); this.status = status; }
@@ -350,4 +351,60 @@ export async function runTaskTool(cfg, name, args) {
     // membacanya supaya bisa menjelaskan ke pengguna alih-alih diam.
     return { ok: false, error: e instanceof TaskError ? e.message : 'Gagal menghubungi sistem task.' };
   }
+}
+
+// ── Jadwal & meeting ───────────────────────────────────────
+
+/** Kalender internal sistem task: acara, tenggat, dan show day. */
+export async function listSchedule(cfg) {
+  const d = await call(cfg, '/calendar');
+  const entries = d?.data?.entries || d?.entries || [];
+  const items = Array.isArray(entries) ? entries : [];
+  return items
+    .map(e => ({
+      date: e.date, title: e.title || '', kind: e.kind || '',
+      eventId: e.eventId || null, eventName: e.eventName || null,
+    }))
+    .filter(e => e.date)
+    .sort((a, b) => new Date(a.date) - new Date(b.date));
+}
+
+/**
+ * Buat meeting. Bila Google tersambung, acaranya masuk ke Google Calendar.
+ * Bila belum, meeting tetap dicatat sebagai task bertenggat di sistem task —
+ * jadi tombolnya tidak pernah menjadi tombol mati.
+ */
+export async function createMeeting(cfg, { title, start, guests, durationMin = 60 }) {
+  const t = String(title || '').trim();
+  if (!t) throw new TaskError('Judul meeting wajib diisi.', 400);
+
+  const startDate = new Date(start);
+  if (!start || isNaN(startDate)) {
+    throw new TaskError('Waktu meeting tidak terbaca. Contoh yang benar: 2026-09-05T10:00.', 400);
+  }
+  const endDate = new Date(startDate.getTime() + durationMin * 60000);
+  const emails = String(guests || '')
+    .split(/[,\s;]+/).map(x => x.trim()).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
+
+  if (googleReady()) {
+    const ev = await createCalendarEvent({
+      title: t,
+      startISO: startDate.toISOString(),
+      endISO: endDate.toISOString(),
+      guests: emails,
+      description: 'Dibuat lewat Reddie.',
+    });
+    return { ok: true, google: true, id: ev.id, link: ev.link,
+             mulai: startDate.toISOString(), peserta: emails.length };
+  }
+
+  // Tanpa Google: dicatat internal supaya tetap ada jejaknya.
+  const task = await createTask(cfg, {
+    title: `Meeting: ${t}`,
+    priority: 'medium',
+    due: startDate.toISOString(),
+  });
+  return { ok: true, google: false, dicatat_sebagai: task.title || `Meeting: ${t}`,
+           mulai: startDate.toISOString(), peserta: emails.length,
+           catatan: 'Google Calendar belum tersambung, jadi meeting dicatat sebagai jadwal internal.' };
 }

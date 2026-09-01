@@ -11,7 +11,8 @@ import { publishedContent, buildDraft, publish, latestVersion, restoreToDraft, d
 import { transcriptFor, buildPDF, buildXLSX, extractTicket, pushWebhook, SkillError } from './skills.js';
 import { extractText, ExtractError, MAX_ATTACH_BYTES, MAX_PER_SESSION } from './extract.js';
 import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskError,
-         TASK_TOOLS, runTaskTool } from './tasks.js';
+         TASK_TOOLS, runTaskTool, listSchedule, createMeeting } from './tasks.js';
+import { googleStatus } from './google.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -255,6 +256,23 @@ export function buildApp() {
   app.patch('/api/tasks/:id', taskGuard(async (cfg, req, res) => {
     const t = await updateTask(cfg, req.params.id, { status: req.body?.status, title: req.body?.title });
     res.json({ task: t });
+  }));
+
+  // ═══════════════ SCHEDULE & MEETING ═══════════════
+
+  app.get('/api/schedule', taskGuard(async (cfg, _req, res) => {
+    const entries = await listSchedule(cfg);
+    res.set('cache-control', 'no-store');
+    res.json({ configured: true, entries, google: googleStatus() });
+  }));
+
+  app.post('/api/meetings', taskGuard(async (cfg, req, res) => {
+    const r = await createMeeting(cfg, {
+      title: req.body?.title,
+      start: req.body?.start,
+      guests: req.body?.guests,
+    });
+    res.status(201).json(r);
   }));
 
   // ═══════════════ LAMPIRAN ═══════════════

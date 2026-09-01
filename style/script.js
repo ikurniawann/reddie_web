@@ -711,60 +711,34 @@ function setupDashboardDemo() {
                 break;
 
             case "Task & Scheduling":
+                // Modul Schedule. Dua tab: daftar jadwal, dan meeting yang
+                // dikirim ke Google Calendar. Isinya diisi live.js.
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Queue</span>
-                        <span class="stats-tab">Calendar</span>
+                        <span class="stats-tab active" data-schedtab="list" data-cms="console.sched_tab1">Schedule List</span>
+                        <span class="stats-tab" data-schedtab="meeting" data-cms="console.sched_tab2">Meeting</span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card">
-                            <div class="billing-header">
-                                <h3>Task Scheduler</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-calendar-days"></i></span>
-                            </div>
-                            <div>
-                                <div class="section-label">UPCOMING TASKS</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card" style="grid-column: span 2; background: rgba(0,0,0,0.03);">
-                                        <span class="dist-type">Weekly Report Sync</span>
-                                        <span class="dist-val" style="font-size: 0.8rem; font-weight: 500;">Every Monday, 9:00 AM<br><span style="color: #eab308; font-weight: 700; font-size: 0.72rem;"><i class="fa-solid fa-spinner fa-spin"></i> Pending</span></span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2; background: rgba(0,0,0,0.03);">
-                                        <span class="dist-type">Database Cleanup</span>
-                                        <span class="dist-val" style="font-size: 0.8rem; font-weight: 500;">1st of month, 2:00 AM<br><span style="color: #22c55e; font-weight: 700; font-size: 0.72rem;"><i class="fa-solid fa-circle-check"></i> Active</span></span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2; background: rgba(0,0,0,0.03);">
-                                        <span class="dist-type">Customer Follow-up</span>
-                                        <span class="dist-val" style="font-size: 0.8rem; font-weight: 500;">Tomorrow, 2:00 PM<br><span style="color: #6b7280; font-weight: 700; font-size: 0.72rem;"><i class="fa-solid fa-clock"></i> Queued</span></span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="section-label">WEEKLY TASK COMPLETION</div>
-                                <div class="progress-bars-grid" style="grid-template-columns: 1fr; padding: 0.8rem 1rem;">
-                                    <div style="font-size: 0.75rem; font-weight: 700; display: flex; justify-content: space-between; margin-bottom: 5px;">
-                                        <span>Progress Score</span>
-                                        <span>82%</span>
-                                    </div>
-                                    <div class="bar-container" style="width: 100%; height: 8px;">
-                                        <div class="bar bar-sla" style="width: 82%; height: 100%; bottom: auto; left: 0;"></div>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn-escalate">Create New Task</button>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
+                                data-cms="console.sched_title">Schedule</h3>
+                            <i class="fa-solid fa-calendar-check" style="font-size:1.05rem;color:#374151;"></i>
+                        </div>
+                        <div data-schedpanel>
+                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Memuat jadwal…</p>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "Task & Scheduling Agent";
-                welcomeSubtitleText = "Draft natural language tasks to schedule recurring automation flows.";
+                welcomeTitleText = "Schedule Console";
+                welcomeSubtitleText = "Atur jadwal dan meeting lewat percakapan, langsung ke kalender.";
                 chipsHTML = `
-                    <button class="chip">Schedule weekly check-in</button>
-                    <button class="chip">Sync database every Friday</button>
-                    <button class="chip">Send newsletter on Monday</button>
-                    <button class="chip">Add follow-up task</button>
+                    <button class="chip">Jadwal saya minggu ini apa saja?</button>
+                    <button class="chip">Buatkan meeting besok jam 10 pagi, judulnya Review Sprint</button>
+                    <button class="chip">Jadwalkan meeting dengan tim finance Jumat jam 14.00</button>
+                    <button class="chip">Meeting apa yang paling dekat?</button>
                 `;
                 break;
-                
+
             case "Analyze":
                 statsHTML = `
                     <div class="stats-tabs">
@@ -1104,6 +1078,7 @@ function setupDashboardDemo() {
         }
         // Panel Task Focus mengambil datanya sendiri setelah kerangkanya ada.
         if (tabName === 'Real-Time Discussion' && window.REDDIE_TASKS) window.REDDIE_TASKS();
+        if (tabName === 'Task & Scheduling' && window.REDDIE_SCHEDULE) window.REDDIE_SCHEDULE();
     }
     
     function getAgentMockResponse(query, turnNum) {

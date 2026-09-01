@@ -387,14 +387,7 @@
               ' task selesai · ' + running + ' sedang berjalan</div>' +
             '</div>' +
 
-            '<div data-newwrap style="display:none;gap:.4rem;margin-top:.9rem;">' +
-              '<input data-newtask placeholder="Judul task baru…" style="flex:1;min-width:0;font:inherit;font-size:.78rem;' +
-              'padding:.5rem .6rem;border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
-            '</div>' +
-            '<button data-addtask style="width:100%;margin-top:.9rem;background:#16192a;color:#fff;border:none;' +
-              'border-radius:11px;padding:.75rem;font:800 .88rem system-ui;cursor:pointer;">' +
-              lbl('task_button', 'Create New Task') + '</button>' +
-            '<p data-taskmsg style="font-size:.7rem;color:#6b7280;margin:.5rem 0 0;text-align:center;"></p>';
+            '<p data-taskmsg style="font-size:.7rem;color:#6b7280;margin:.7rem 0 0;text-align:center;"></p>';
     }
 
     function loadTasks() {
@@ -451,44 +444,135 @@
           });
     });
 
-    function addTask() {
-        var input = document.querySelector('[data-newtask]');
-        if (!input) return;
-        var title = input.value.trim();
-        if (!title) { input.focus(); return; }
-        taskMsg('Menambahkan…');
-        fetch(API + '/tasks', {
+    // ── Modul Schedule ───────────────────────────────────────────────
+    var schedTab = 'list';
+
+    function schedRow(e) {
+        var d = new Date(e.date);
+        var when = isNaN(d) ? String(e.date || '') : whenLabel({ due: e.date });
+        var kind = String(e.kind || '').toLowerCase();
+        var col = kind === 'meeting' ? '#7c3aed' : kind === 'show' ? '#dc2626' : '#6b7280';
+        return '<div style="background:rgba(0,0,0,.045);border:1px solid rgba(0,0,0,.05);border-radius:11px;' +
+               'padding:.7rem .8rem;margin-bottom:.6rem;">' +
+               '<div style="font-size:.8rem;color:#6b7280;line-height:1.3;">' + esc(e.title || '(tanpa judul)') + '</div>' +
+               (e.eventName ? '<div style="font-size:.66rem;color:#9ca3af;">' + esc(e.eventName) + '</div>' : '') +
+               '<div style="font-size:.98rem;color:#111827;font-weight:700;margin-top:.1rem;">' + esc(when) + '</div>' +
+               (kind ? '<span style="display:inline-block;margin-top:.25rem;font-size:.6rem;font-weight:700;' +
+                       'text-transform:uppercase;color:' + col + ';border:1px solid ' + col + '33;border-radius:99px;' +
+                       'padding:.1rem .45rem;">' + esc(kind) + '</span>' : '') +
+               '</div>';
+    }
+
+    function renderSchedList(box, d) {
+        if (!d.configured) {
+            box.innerHTML = '<p style="font-size:.78rem;color:#6b7280;margin:0;line-height:1.5;">' +
+                'Modul jadwal belum tersambung. Isi pengaturan di panel admin, ' +
+                'bagian <b>Integrasi &amp; otomasi</b>.</p>';
+            return;
+        }
+        var items = d.entries || [];
+        box.innerHTML =
+            '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin-bottom:.55rem;">' +
+              'JADWAL TERDEKAT</div>' +
+            (items.length ? items.slice(0, 6).map(schedRow).join('')
+                          : '<p style="font-size:.78rem;color:#6b7280;margin:0;">Belum ada jadwal dalam 30 hari ke depan.</p>');
+    }
+
+    function renderMeeting(box, d) {
+        var g = d.google || {};
+        var siap = !!g.connected;
+        box.innerHTML =
+            '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin-bottom:.55rem;">' +
+              'MEETING BARU</div>' +
+            (siap
+              ? '<p style="font-size:.75rem;color:#16a34a;margin:0 0 .7rem;">' +
+                '<i class="fa-solid fa-circle-check"></i> Tersambung ke Google Calendar' +
+                (g.account ? ' · ' + esc(g.account) : '') + '</p>'
+              : '<p style="font-size:.75rem;color:#ca8a04;margin:0 0 .7rem;line-height:1.5;">' +
+                '<i class="fa-solid fa-circle-exclamation"></i> Google Calendar belum tersambung. ' +
+                'Meeting akan dicatat sebagai jadwal internal saja.</p>') +
+            '<div style="display:flex;flex-direction:column;gap:.5rem;">' +
+              '<input data-mtitle placeholder="Judul meeting" style="font:inherit;font-size:.78rem;padding:.5rem .6rem;' +
+                'border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
+              '<input data-mwhen type="datetime-local" style="font:inherit;font-size:.78rem;padding:.5rem .6rem;' +
+                'border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
+              '<input data-mguests placeholder="Email peserta, pisahkan koma (opsional)" style="font:inherit;font-size:.78rem;' +
+                'padding:.5rem .6rem;border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
+            '</div>' +
+            '<button data-mcreate style="width:100%;margin-top:.8rem;background:#16192a;color:#fff;border:none;' +
+              'border-radius:11px;padding:.7rem;font:800 .85rem system-ui;cursor:pointer;">Add New Meeting</button>' +
+            '<button data-mchat style="width:100%;margin-top:.5rem;background:none;color:#374151;' +
+              'border:1px solid rgba(0,0,0,.15);border-radius:11px;padding:.6rem;font:700 .78rem system-ui;cursor:pointer;">' +
+              '<i class="fa-solid fa-comment-dots"></i> Atur lewat chat</button>' +
+            '<p data-mmsg style="font-size:.7rem;color:#6b7280;margin:.6rem 0 0;text-align:center;"></p>';
+    }
+
+    function loadSchedule() {
+        var box = document.querySelector('[data-schedpanel]');
+        if (!box) return Promise.resolve();
+        return fetch(API + '/schedule', { signal: AbortSignal.timeout(15000) })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (d) {
+                if (schedTab === 'meeting') renderMeeting(box, d); else renderSchedList(box, d);
+            })
+            .catch(function () {
+                box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">Jadwal tidak terjangkau saat ini.</p>';
+            });
+    }
+    window.REDDIE_SCHEDULE = function () { schedTab = 'list'; return loadSchedule(); };
+
+    document.addEventListener('click', function (e) {
+        var tab = e.target.closest('[data-schedtab]');
+        if (tab) {
+            e.preventDefault();
+            schedTab = tab.dataset.schedtab;
+            [].forEach.call(document.querySelectorAll('[data-schedtab]'), function (t) {
+                t.classList.toggle('active', t === tab);
+            });
+            loadSchedule();
+            return;
+        }
+        if (e.target.closest('[data-mchat]')) {
+            e.preventDefault();
+            // Arahkan ke chat dengan kalimat contoh yang tinggal disunting —
+            // lebih cepat daripada mengisi tiga kolom terpisah.
+            var input = document.getElementById('chatInput');
+            if (input) {
+                input.value = 'Jadwalkan meeting besok jam 10 pagi, judulnya ';
+                input.focus();
+                input.setSelectionRange(input.value.length, input.value.length);
+            }
+            return;
+        }
+        if (e.target.closest('[data-mcreate]')) { e.preventDefault(); createMeeting(); }
+    });
+
+    function meetMsg(t, bad) {
+        var el = document.querySelector('[data-mmsg]');
+        if (el) { el.textContent = t || ''; el.style.color = bad ? '#b91c1c' : '#6b7280'; }
+    }
+
+    function createMeeting() {
+        var title = (document.querySelector('[data-mtitle]') || {}).value || '';
+        var when = (document.querySelector('[data-mwhen]') || {}).value || '';
+        var guests = (document.querySelector('[data-mguests]') || {}).value || '';
+        if (!title.trim()) { meetMsg('Judul meeting wajib diisi.', true); return; }
+        if (!when) { meetMsg('Waktu meeting wajib diisi.', true); return; }
+        meetMsg('Membuat meeting…');
+        fetch(API + '/meetings', {
             method: 'POST',
             headers: { 'content-type': 'application/json' },
-            body: JSON.stringify({ title: title }),
+            body: JSON.stringify({ title: title.trim(), start: when, guests: guests.trim() }),
         }).then(function (r) {
             return r.json().catch(function () { return {}; }).then(function (d) {
                 if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+                return d;
             });
-        }).then(function () { input.value = ''; taskMsg('Task ditambahkan.'); loadTasks(); })
-          .catch(function (err) { taskMsg(err.message, true); });
+        }).then(function (d) {
+            meetMsg(d.google ? 'Meeting dibuat di Google Calendar.' : 'Meeting dicatat sebagai jadwal internal.');
+            var t = document.querySelector('[data-mtitle]'); if (t) t.value = '';
+        }).catch(function (err) { meetMsg(err.message, true); });
     }
-
-    document.addEventListener('click', function (e) {
-        if (!e.target.closest('[data-addtask]')) return;
-        e.preventDefault();
-        var wrap = document.querySelector('[data-newwrap]');
-        var input = document.querySelector('[data-newtask]');
-        if (!wrap || !input) return;
-        // Klik pertama membuka kolom isian, klik berikutnya mengirim —
-        // sehingga tombol utama tetap satu dan tidak ada form menganggur.
-        if (wrap.style.display === 'none') {
-            wrap.style.display = 'flex';
-            input.focus();
-            return;
-        }
-        addTask();
-    });
-    document.addEventListener('keydown', function (e) {
-        if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-newtask]')) {
-            e.preventDefault(); addTask();
-        }
-    });
 
     // ── Lampiran: berkas dibaca server, teksnya masuk ke percakapan ──
     var ACCEPT = '.pdf,.docx,.xlsx,.xlsm,.csv,.txt,.md,.png,.jpg,.jpeg,.webp,.gif,' +
@@ -578,7 +662,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g2';
+        sc.src = 'style/editor.js?v=20260901-g3';
         document.body.appendChild(sc);
     }
 
