@@ -301,7 +301,14 @@
             return fetch(API + '/attachments', { method: 'POST', headers: h, body: buf });
         }).then(function (r) {
             return r.json().catch(function () { return {}; }).then(function (d) {
-                if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+                if (!r.ok) {
+                    // 413 tanpa badan JSON berarti proxy yang menolak, bukan aplikasi.
+                    if (r.status === 413 && !d.error) {
+                        throw new Error('berkas terlalu besar untuk dikirim (batas 12 MB). ' +
+                                        'Perkecil dulu, atau kirim per bagian.');
+                    }
+                    throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+                }
                 return d;
             });
         }).then(function (d) {
@@ -367,7 +374,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f5';
+        sc.src = 'style/editor.js?v=20260901-f6';
         document.body.appendChild(sc);
     }
 
