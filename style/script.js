@@ -247,7 +247,14 @@ function setupDashboardDemo() {
         }
 
         agentOpts.forEach(opt => {
-            opt.addEventListener('click', () => {
+            opt.addEventListener('click', (e) => {
+                // Agent "coming soon" tetap terlihat tapi tidak memilih apa
+                // pun. Perambatan dihentikan supaya penutup dropdown di
+                // tingkat dokumen tidak ikut jalan: daftar dibiarkan terbuka
+                // agar kliknya terasa seperti tombol mati, bukan seperti
+                // pilihan yang diterima lalu diam-diam diabaikan.
+                if (opt.dataset.soon) { e.stopPropagation(); return; }
+
                 // Close dropdown on selection
                 if (agentDropdown) agentDropdown.classList.remove('dropdown-open');
 

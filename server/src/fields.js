@@ -304,6 +304,7 @@ export const TABLES = {
       { name: 'description',      label: 'Deskripsi',       type: 'html',   max: 400, help: 'Paragraf di halaman About. Boleh memakai <strong> untuk menebalkan.' },
       { name: 'system_prompt',    label: 'Kepribadian',     type: 'prompt', max: 2000, help: 'Instruksi cara agent ini menjawab. Tulis seperti memberi arahan ke staf baru: siapa dia, apa keahliannya, gaya bicaranya, dan batasannya.' },
       { name: 'show_in_dropdown', label: 'Tampil di daftar pilihan', type: 'bool', help: 'Muncul di dropdown pojok kanan atas konsol.' },
+      { name: 'coming_soon',      label: 'Segera hadir',    type: 'bool',   help: 'Tetap terlihat di daftar dengan label "Coming Soon", tapi belum bisa dipilih. Untuk menyembunyikan sepenuhnya, matikan "Aktif".' },
       { name: 'show_in_carousel', label: 'Tampil di korsel About',   type: 'bool', help: 'Muncul di korsel halaman About.' },
       { name: 'enabled',          label: 'Aktif',           type: 'bool',   help: 'Nonaktifkan untuk menyembunyikan tanpa menghapus.' },
       { name: 'sort',             label: 'Urutan',          type: 'int',    help: 'Angka kecil tampil lebih dulu.' },

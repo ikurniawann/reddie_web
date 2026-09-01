@@ -270,10 +270,15 @@
         var dropdownAgents = (d.agents || []).filter(function (a) { return a.show_in_dropdown; });
         if (dd && dropdownAgents.length) {
             dd.innerHTML = dropdownAgents.map(function (a, i) {
+                var soon = !!a.coming_soon;
                 return '<div class="agent-opt' + (i === 0 ? ' active' : '') +
+                       (soon ? ' is-soon' : '') +
                        '" data-agent="' + esc(a.slug) + '"' +
+                       (soon ? ' data-soon="1" aria-disabled="true"' : '') +
                        (a.video ? ' data-video="' + esc(a.video) + '"' : '') +
-                       '>' + esc(a.name) + '</div>';
+                       '><span>' + esc(a.name) + '</span>' +
+                       (soon ? '<span class="agent-opt-badge">Coming Soon</span>' : '') +
+                       '</div>';
             }).join('');
             // Sapaan tiap agent disimpan untuk dibaca script.js saat pilihan
             // diklik. Diletakkan sebelum pengikatan ulang supaya klik pertama
@@ -1621,6 +1626,7 @@
     // ── Lacak pilihan agent & model dari UI yang sudah ada ───────────
     document.addEventListener('click', function (e) {
         var opt = e.target.closest('.agent-opt');
+        if (opt && opt.dataset.soon) return;      // belum siap dipakai
         if (opt && opt.dataset.agent) {
             window.__reddieAgent = opt.dataset.agent.toLowerCase();
             pasangVideo(opt.dataset.video);
