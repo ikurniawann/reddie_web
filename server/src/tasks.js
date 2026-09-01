@@ -263,6 +263,23 @@ export const TASK_TOOLS = [
   {
     type: 'function',
     function: {
+      name: 'create_meeting',
+      description: 'Menjadwalkan meeting. Bila pengguna sudah masuk dengan Google, acaranya dibuat di Google Calendar miliknya. Bila belum, meeting dicatat sebagai jadwal internal dan kamu HARUS mengatakan itu.',
+      parameters: {
+        type: 'object',
+        properties: {
+          title: { type: 'string', description: 'Judul meeting.' },
+          start: { type: 'string', description: 'Waktu mulai format ISO lengkap dengan zona, misalnya 2026-09-05T10:00:00+07:00. Hitung sendiri dari kata seperti "besok jam 10" memakai waktu sekarang yang diberikan.' },
+          duration_min: { type: 'integer', description: 'Durasi dalam menit. Bawaannya 60.' },
+          guests: { type: 'string', description: 'Email peserta dipisah koma, bila disebut.' },
+        },
+        required: ['title', 'start'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
       name: 'complete_task',
       description: 'Menandai sebuah task selesai. Sebutkan judulnya; sistem akan mencocokkan dengan task yang sedang berjalan.',
       parameters: {
@@ -295,7 +312,7 @@ function matchTask(tasks, wanted) {
 }
 
 /** Jalankan satu panggilan tool dari model. Selalu mengembalikan objek biasa. */
-export async function runTaskTool(cfg, name, args) {
+export async function runTaskTool(cfg, name, args, ctx = {}) {
   try {
     if (name === 'list_tasks') {
       // Bawaan sengaja besar: model harus melihat seluruh task berjalan,
@@ -313,6 +330,14 @@ export async function runTaskTool(cfg, name, args) {
     if (name === 'create_task') {
       const t = await createTask(cfg, { title: args.title, priority: args.priority, due: args.due });
       return { ok: true, dibuat: t.title || args.title };
+    }
+    if (name === 'create_meeting') {
+      const r = await createMeeting(cfg, {
+        title: args.title, start: args.start, guests: args.guests,
+        durationMin: Number(args.duration_min) || 60,
+        googleToken: ctx.googleToken,
+      });
+      return r;
     }
     if (name === 'update_task' || name === 'cancel_task') {
       const r = await listTasks(cfg, { limit: 50 });

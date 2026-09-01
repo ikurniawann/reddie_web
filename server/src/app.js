@@ -157,6 +157,7 @@ export function buildApp() {
     // percakapan biasa. Tanpa konfigurasi, tool tidak dikirim sama sekali.
     const taskCfg = await taskConfig();
     const tools = taskReady(taskCfg) ? TASK_TOOLS : null;
+    const toolCtxHasGoogle = !!String(req.headers['x-google-token'] || '');
     if (tools) {
       system += '\n\nKamu punya akses ke sistem manajemen task lewat tool.\n' +
         'ATURAN MUTLAK: kamu TIDAK BOLEH mengatakan sebuah task sudah dibuat, ' +
@@ -173,7 +174,14 @@ export function buildApp() {
         'dengan jelas. Sistem task TIDAK bisa menghapus permanen — bila pengguna ' +
         'minta hapus, pakai cancel_task dan katakan bahwa task dibatalkan, bukan ' +
         'dihapus. Setelah tool dijalankan, laporkan hasilnya apa adanya; bila tool ' +
-        'mengembalikan ok:false, sampaikan kegagalannya, jangan mengaku berhasil.';
+        'mengembalikan ok:false, sampaikan kegagalannya, jangan mengaku berhasil.\n' +
+        'Waktu sekarang: ' + new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta', dateStyle: 'full', timeStyle: 'short' }) +
+        ' WIB. Pakai ini untuk menghitung waktu dari kalimat seperti "besok jam 10" ' +
+        'atau "Jumat sore", dan tulis hasilnya sebagai ISO berzona +07:00.' +
+        (toolCtxHasGoogle ? '\nPengguna SUDAH masuk dengan Google, jadi meeting akan masuk ke kalendernya.'
+                          : '\nPengguna BELUM masuk dengan Google. Bila ia minta dijadwalkan, tetap buat meeting-nya, ' +
+                            'lalu beri tahu bahwa itu tercatat sebagai jadwal internal dan sarankan menekan ' +
+                            'tombol Masuk dengan Google di tab Meeting agar masuk ke kalendernya.');
     }
 
     try {
@@ -183,7 +191,10 @@ export function buildApp() {
       // menyegarkan panelnya. list_tasks tidak dihitung — membaca saja tidak
       // mengubah apa pun, dan menyegarkan tanpa sebab hanya bikin panel berkedip.
       let tasksChanged = false;
-      const MUTATING = ['create_task', 'update_task', 'cancel_task', 'complete_task'];
+      const MUTATING = ['create_task', 'update_task', 'cancel_task', 'complete_task', 'create_meeting'];
+      // Token Google milik pengunjung ikut diteruskan ke tool, supaya
+      // meeting yang dibuat lewat chat mendarat di kalendernya sendiri.
+      const toolCtx = { googleToken: String(req.headers['x-google-token'] || '') || undefined };
       // Dibatasi 3 putaran: cukup untuk lihat-lalu-ubah, dan mencegah model
       // berputar memanggil tool tanpa henti dengan biaya per panggilan.
       for (let round = 0; round < 3; round++) {
@@ -200,7 +211,7 @@ export function buildApp() {
           let args = {};
           try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* argumen rusak */ }
           const fname = tc.function?.name;
-          const out = await runTaskTool(taskCfg, fname, args);
+          const out = await runTaskTool(taskCfg, fname, args, toolCtx);
           if (out && out.ok && MUTATING.includes(fname)) tasksChanged = true;
           convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
         }

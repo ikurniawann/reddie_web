@@ -29,9 +29,13 @@
     window.REDDIE_API = {
         get ready() { return state.ready; },
         chat: function (message) {
+            var h = { 'content-type': 'application/json' };
+            // Token Google ikut dikirim supaya meeting yang dijadwalkan lewat
+            // percakapan mendarat di kalender pengunjung, bukan jadwal internal.
+            if (state.gToken) h['x-google-token'] = state.gToken;
             return fetch(API + '/chat', {
                 method: 'POST',
-                headers: { 'content-type': 'application/json' },
+                headers: h,
                 body: JSON.stringify({
                     sessionId: state.sessionId,
                     agent: (window.__reddieAgent || 'reddie'),
@@ -738,7 +742,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g5';
+        sc.src = 'style/editor.js?v=20260901-g6';
         document.body.appendChild(sc);
     }
 
