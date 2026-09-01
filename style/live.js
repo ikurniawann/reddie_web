@@ -9,6 +9,15 @@
 
     // API relatif terhadap halaman: /dev-reddie/ -> /dev-reddie/api/...
     var API = 'api';
+    // Keadaan sesi kendali agent. Diletakkan bersama state lain karena
+    // REDDIE_API.chat di bawah membacanya — jauh sebelum blok Agentic
+    // di bagian akhir berkas ini dijalankan.
+    //
+    // Sesi HANYA dimulai pengunjung. Tidak ada koneksi otomatis saat panel
+    // dibuka — agent tidak boleh bisa menempel ke tab orang yang tidak
+    // mengundangnya.
+    var agentik = { ws: null, kode: null, izin: {}, keHermes: false };
+
     var state = {
         ready: false,          // true bila /api/content berhasil dimuat
         models: [],
@@ -29,6 +38,13 @@
     window.REDDIE_API = {
         get ready() { return state.ready; },
         chat: function (message) {
+            // Sesi agentic dengan pengalihan menyala: pesan pergi ke Hermes,
+            // bukan ke Reddie. Balasannya datang belakangan lewat tindakan
+            // 'reply', jadi di sini tidak ada balasan yang ditunggu.
+            if (agentik.keHermes && agentik.ws && agentik.ws.readyState === 1) {
+                agentik.ws.send(JSON.stringify({ type: 'say', text: message }));
+                return Promise.resolve({ reply: null, keHermes: true });
+            }
             var h = { 'content-type': 'application/json' };
             // Token Google ikut dikirim supaya meeting yang dijadwalkan lewat
             // percakapan mendarat di kalender pengunjung, bukan jadwal internal.
@@ -794,11 +810,6 @@
     }
 
     // ── Agentic Control: agent mengendalikan tampilan ────────────────
-    // Sesi HANYA dimulai pengunjung. Tidak ada koneksi otomatis saat panel
-    // dibuka — agent tidak boleh bisa menempel ke tab orang yang tidak
-    // mengundangnya.
-    var agentik = { ws: null, kode: null, izin: {} };
-
     function agentikStatus(t, warna) {
         var el = document.querySelector('[data-agentikmsg]');
         if (el) { el.textContent = t || ''; el.style.color = warna || '#6b7280'; }
@@ -807,7 +818,7 @@
     function spandukKendali(aktif) {
         var b = document.getElementById('reddieControlBanner');
         if (!aktif) { if (b) b.remove(); return; }
-        if (b) return;
+        if (b) b.remove();      // gambar ulang agar tulisannya mengikuti keadaan
         b = document.createElement('div');
         b.id = 'reddieControlBanner';
         b.style.cssText = 'position:fixed;top:0;left:0;right:0;z-index:100000;background:#111827;' +
@@ -817,7 +828,9 @@
             '<span style="display:flex;align-items:center;gap:.45rem;">' +
               '<span style="width:8px;height:8px;border-radius:50%;background:#22c55e;' +
               'box-shadow:0 0 0 0 rgba(34,197,94,.7);animation:reddiePulse 1.6s infinite;"></span>' +
-              'Reddie sedang mengendalikan tampilan ini</span>' +
+              (agentik.keHermes
+                ? 'Hermes mengendalikan tampilan &amp; menerima pesan chat Anda'
+                : 'Reddie sedang mengendalikan tampilan ini') + '</span>' +
             '<button id="reddieControlStop" style="background:#fff;color:#111827;border:none;' +
               'border-radius:99px;padding:.25rem .8rem;font:800 11.5px system-ui;cursor:pointer;">Hentikan</button>';
         document.body.appendChild(b);
@@ -834,7 +847,7 @@
 
     function putusAgentik() {
         if (agentik.ws) { try { agentik.ws.close(); } catch (e) {} }
-        agentik.ws = null; agentik.kode = null; agentik.izin = {};
+        agentik.ws = null; agentik.kode = null; agentik.izin = {}; agentik.keHermes = false;
         spandukKendali(false);
         renderAgentik();
         agentikStatus('Sesi dihentikan. Reddie tidak lagi mengendalikan tampilan ini.');
@@ -882,6 +895,11 @@
                 mintaIzin(c.arg);
             } else if (c.action === 'capture') {
                 agentikStatus('Permintaan cuplikan ' + c.arg + ' diterima.', '#111827');
+            } else if (c.action === 'reply') {
+                if (window.appendMessage) {
+                    window.appendMessage(c.arg, 'agent');
+                    if (window.scrollToBottom) window.scrollToBottom();
+                }
             }
         } catch (e) { /* satu tindakan gagal tidak mematikan sesi */ }
     }
@@ -961,6 +979,14 @@
               '</div>' +
               '<div style="font-size:.68rem;color:#6b7280;margin-bottom:.35rem;">Izin yang sudah diberikan:</div>' +
               '<div style="display:flex;gap:.3rem;flex-wrap:wrap;margin-bottom:.7rem;">' + izinBaris + '</div>' +
+              '<label style="display:flex;align-items:flex-start;gap:.5rem;cursor:pointer;' +
+                'background:rgba(0,0,0,.03);border-radius:9px;padding:.55rem .65rem;margin-bottom:.6rem;">' +
+                '<input type="checkbox" data-agentikroute' + (agentik.keHermes ? ' checked' : '') +
+                ' style="margin-top:.15rem;">' +
+                '<span style="font-size:.74rem;color:#374151;line-height:1.4;">' +
+                  '<b>Alihkan chat ke Hermes</b><br>' +
+                  '<span style="color:#6b7280;font-size:.68rem;">Pesan yang Anda ketik di kolom chat ' +
+                  'dikirim ke Hermes, bukan ke Reddie.</span></span></label>' +
               '<button data-agentikstop style="width:100%;background:none;color:#b91c1c;' +
                 'border:1px solid rgba(185,28,28,.3);border-radius:9px;padding:.55rem;' +
                 'font:700 .78rem system-ui;cursor:pointer;">Hentikan kendali</button>'
@@ -982,6 +1008,16 @@
     document.addEventListener('click', function (e) {
         if (e.target.closest('[data-agentikstart]')) { e.preventDefault(); mulaiAgentik(); }
         else if (e.target.closest('[data-agentikstop]')) { e.preventDefault(); putusAgentik(); }
+    });
+
+    document.addEventListener('change', function (e) {
+        var cb = e.target.closest('[data-agentikroute]');
+        if (!cb) return;
+        agentik.keHermes = cb.checked;
+        spandukKendali(true);   // gambar ulang; tulisannya ikut berubah
+        agentikStatus(cb.checked
+            ? 'Chat dialihkan. Ketik di kolom chat, Hermes yang menjawab.'
+            : 'Chat kembali ke Reddie.', cb.checked ? '#16a34a' : '#6b7280');
     });
 
     // ── Panel Automation: peta koneksi + workflow ────────────────────

@@ -310,6 +310,16 @@ function setupDashboardDemo() {
         const typingIndicator = appendTypingIndicator();
         
         // 3. Jawaban: API nyata (multi-provider) dulu; mock hanya sebagai fallback
+        // Mengembalikan kolom chat ke keadaan siap tanpa menampilkan apa pun.
+        function lepasTunggu() {
+            typingIndicator.remove();
+            chatInput.disabled = false;
+            sendBtn.disabled = false;
+            sendBtn.style.opacity = '1';
+            chatInput.focus();
+            isGenerating = false;
+        }
+
         function renderReply(responseText, fromMock) {
             typingIndicator.remove();
             const responseMsg = appendMessage('', 'agent');
@@ -329,7 +339,13 @@ function setupDashboardDemo() {
         
         if (window.REDDIE_API && window.REDDIE_API.ready) {
             window.REDDIE_API.chat(queryText)
-                .then(function(d) { renderReply(d.reply, false); })
+                .then(function(d) {
+                    // Pesan yang dialihkan ke Hermes tidak punya balasan di sini.
+                    // Jawabannya datang belakangan lewat tindakan 'reply', jadi
+                    // kolom chat dibuka kembali tanpa menggambar gelembung kosong.
+                    if (d && d.keHermes) { lepasTunggu(); return; }
+                    renderReply(d.reply, false);
+                })
                 .catch(function(err) {
                     // 429 (limit) & pesan server lain ditampilkan apa adanya; selain itu fallback mock
                     if (err && err.userMessage) renderReply(err.userMessage, false);

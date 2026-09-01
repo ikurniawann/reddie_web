@@ -38,6 +38,7 @@ export const ACTIONS = {
   toast:        { arg: 'text',   desc: 'Menampilkan keterangan singkat di layar.' },
   ask_permission: { arg: 'kind', desc: 'Meminta izin browser: camera, microphone, screen, atau clipboard.' },
   capture:      { arg: 'kind',   desc: 'Mengambil satu cuplikan setelah izinnya diberikan.' },
+  reply:        { arg: 'text',   desc: 'Menampilkan balasanmu sebagai pesan agent di kolom chat.' },
 };
 
 // Target sorot/gulir dibatasi nama simbolik, bukan selektor CSS bebas.
@@ -76,9 +77,10 @@ export function validasi(action, arg) {
   if ((action === 'ask_permission' || action === 'capture') && !PERMISSIONS.includes(nilai)) {
     throw new BridgeError(`Izin "${nilai}" tidak dikenal. Pilihannya: ${PERMISSIONS.join(', ')}.`);
   }
-  if ((action === 'send_chat' || action === 'toast')) {
+  if ((action === 'send_chat' || action === 'toast' || action === 'reply')) {
     if (!nilai) throw new BridgeError('Teksnya kosong.');
-    if (nilai.length > 500) throw new BridgeError('Teks maksimal 500 karakter.');
+    var maks = action === 'reply' ? 4000 : 500;   // balasan agent boleh panjang
+    if (nilai.length > maks) throw new BridgeError('Teks maksimal ' + maks + ' karakter.');
   }
   return { action, arg: nilai };
 }
@@ -101,7 +103,18 @@ export function daftarSesi() {
     umur_detik: Math.round((Date.now() - s.dibuat) / 1000),
     izin: [...s.izin],
     tindakan: s.log.length,
+    menunggu: s.inbox.length,
   }));
+}
+
+/** Ambil dan kosongkan pesan yang menunggu dari pengunjung. */
+export function ambilInbox(kode) {
+  bersihkan();
+  const s = sessions.get(String(kode || ''));
+  if (!s) throw new BridgeError('Sesi tidak ditemukan atau sudah berakhir.', 404);
+  s.terakhir = Date.now();
+  const pesan = s.inbox.splice(0, s.inbox.length);
+  return { kode, pesan, izin: [...s.izin] };
 }
 
 export function kirimKeSesi(kode, action, arg) {
@@ -134,7 +147,7 @@ export function attachBridge(server) {
     // Kode dibuat SERVER, bukan diminta klien: kode tebakan tidak boleh
     // membuat orang lain menempel ke sesi yang bukan miliknya.
     const kode = crypto.randomBytes(3).toString('hex').toUpperCase();
-    const s = { ws, dibuat: Date.now(), terakhir: Date.now(), izin: new Set(), log: [] };
+    const s = { ws, dibuat: Date.now(), terakhir: Date.now(), izin: new Set(), log: [], inbox: [] };
 
     if (sessions.size >= MAX_SESSIONS) bersihkan();
     if (sessions.size >= MAX_SESSIONS) { ws.close(1013, 'Terlalu banyak sesi'); return; }
@@ -151,6 +164,14 @@ export function attachBridge(server) {
       // Browser hanya boleh MELAPOR, tidak memerintah apa pun.
       if (m.type === 'permission' && PERMISSIONS.includes(m.kind)) {
         if (m.granted) s.izin.add(m.kind); else s.izin.delete(m.kind);
+      } else if (m.type === 'say') {
+        // Pesan dari pengunjung untuk agent. Ditahan sampai agent
+        // mengambilnya; browser tidak pernah memanggil agent langsung.
+        const teks = String(m.text || '').slice(0, 2000).trim();
+        if (teks) {
+          s.inbox.push({ at: Date.now(), teks });
+          if (s.inbox.length > 50) s.inbox.shift();
+        }
       }
     });
 

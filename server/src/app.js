@@ -17,7 +17,7 @@ import { googleStatus } from './google.js';
 import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleTool } from './news.js';
 import { buatLaporanBerita, ReportError } from './report.js';
 import { fetchTrending, CryptoError, CRYPTO_TOOL, runCryptoTool } from './crypto.js';
-import { cekOperator, kirimKeSesi, daftarSesi, operatorSiap, ACTIONS, TARGETS, PERMISSIONS,
+import { cekOperator, kirimKeSesi, daftarSesi, ambilInbox, operatorSiap, ACTIONS, TARGETS, PERMISSIONS,
          BridgeError } from './bridge.js';
 import { checkConnections, listWorkflows, runWorkflow, n8nReady,
          AUTOMATION_TOOLS, runAutomationTool, AutomationError } from './automation.js';
@@ -393,6 +393,16 @@ export function buildApp() {
   app.get('/api/bridge/sessions', (req, res) => {
     try { cekOperator(req.headers.authorization); res.json({ sesi: daftarSesi() }); }
     catch (e) { res.status(e.status || 400).json({ error: e.message }); }
+  });
+
+  // Agent mengambil pesan yang ditulis pengunjung di kolom chat.
+  app.get('/api/bridge/inbox', (req, res) => {
+    try {
+      cekOperator(req.headers.authorization);
+      res.json(ambilInbox(req.query.kode));
+    } catch (e) {
+      res.status(e instanceof BridgeError ? e.status : 500).json({ error: e.message });
+    }
   });
 
   app.post('/api/bridge/command', (req, res) => {
