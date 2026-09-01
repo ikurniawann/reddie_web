@@ -875,9 +875,12 @@
     function tampilGrafikChat(conns) {
         var box = document.querySelector('[data-chatvisual]');
         if (!box) return;
-        if (!conns || !conns.length) { box.style.display = 'none'; box.innerHTML = ''; return; }
+        if (!conns || !conns.length) { sembunyikanGrafikChat(); return; }
         var aktif = conns.filter(function (c) { return c.up; }).length;
         box.style.display = 'block';
+        box.classList.add('glass');
+        var w = document.getElementById('chatWelcomeState');
+        if (w) w.classList.add('graph-focus');
         box.innerHTML = petaBesar(conns) +
             '<p style="font-size:.72rem;color:#6b7280;text-align:center;margin:.2rem 0 0;">' +
               aktif + ' dari ' + conns.length + ' sistem aktif · diperiksa langsung saat panel dibuka</p>';
@@ -885,7 +888,9 @@
 
     function sembunyikanGrafikChat() {
         var box = document.querySelector('[data-chatvisual]');
-        if (box) { box.style.display = 'none'; box.innerHTML = ''; }
+        if (box) { box.style.display = 'none'; box.className = 'chat-welcome-visual'; box.innerHTML = ''; }
+        var w = document.getElementById('chatWelcomeState');
+        if (w) w.classList.remove('graph-focus');
     }
     window.REDDIE_HIDE_GRAPH = sembunyikanGrafikChat;
 
@@ -1243,7 +1248,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h8';
+        sc.src = 'style/editor.js?v=20260901-h9';
         document.body.appendChild(sc);
     }
 

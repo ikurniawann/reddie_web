@@ -923,6 +923,46 @@ body {
     pointer-events: none;
 }
 
+/* ── Mode grafik (menu Automation) ─────────────────────────────────
+   Video Reddie di latar bersaing perhatian dengan diagram koneksi, jadi
+   ia dikaburkan dan diredupkan — bukan disembunyikan, supaya identitas
+   visualnya tetap terasa sebagai latar. Kelas dipasang live.js dan
+   dicabut saat pindah menu. */
+.chat-welcome-state.graph-focus .chat-welcome-video-bg {
+    filter: blur(22px) saturate(0.55) brightness(1.08);
+    opacity: 0.4;
+    /* Diperbesar sedikit karena blur menipiskan tepi gambar dan
+       menyisakan garis terang di pinggir bila tidak ditutup. */
+    transform: scale(1.15);
+    transition: filter 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
+}
+
+.chat-welcome-state.graph-focus .chat-welcome-header {
+    opacity: 0.85;
+}
+
+/* Panel kaca tempat diagram berdiri. */
+.chat-welcome-visual.glass {
+    background: rgba(255, 255, 255, 0.55);
+    backdrop-filter: blur(16px) saturate(1.2);
+    -webkit-backdrop-filter: blur(16px) saturate(1.2);
+    border: 1px solid rgba(255, 255, 255, 0.7);
+    border-radius: 20px;
+    padding: 1rem 1.1rem 0.8rem;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+    animation: graphFadeIn 0.45s ease both;
+}
+
+@keyframes graphFadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: none; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .chat-welcome-visual.glass { animation: none; }
+    .chat-welcome-state.graph-focus .chat-welcome-video-bg { transition: none; }
+}
+
 .chat-welcome-content {
     position: relative;
     z-index: 2;
