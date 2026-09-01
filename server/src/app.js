@@ -126,14 +126,36 @@ export function buildApp() {
     const batas = intgCfg.chat_limit === 0 ? 0
                 : (Number(intgCfg.chat_limit) || CHAT_MAX_PER_SESSION);
 
+    const batasIp = intgCfg.chat_limit_ip === 0 ? 0 : (Number(intgCfg.chat_limit_ip) || 0);
+
     const { rows: [{ n }] } = await q(
       `SELECT count(*)::int AS n FROM chat_messages WHERE session_id=$1 AND role='user'`, [sid]);
-    if (batas > 0 && n >= batas) {
+
+    // Kuota per-IP menutup celah utama batas per-sesi: sessionId hidup di
+    // browser, jadi menyegarkan halaman atau membuka tab baru memberi sesi
+    // baru dan jatah baru. IP tidak bisa diganti pengunjung semudah itu.
+    let nIp = 0;
+    if (batasIp > 0) {
+      nIp = (await q(
+        `SELECT count(*)::int AS n FROM chat_messages m
+           JOIN chat_sessions s ON s.id = m.session_id
+          WHERE s.ip = $1 AND m.role = 'user'
+            AND m.created_at > now() - interval '24 hours'`, [ip])).rows[0].n;
+    }
+
+    if ((batas > 0 && n >= batas) || (batasIp > 0 && nIp >= batasIp)) {
       // Sengaja 200, bukan 429: ini bukan kegagalan melainkan akhir sesi demo
       // yang direncanakan, dan klien perlu menampilkan formulir langganan
       // alih-alih pesan galat merah.
+      // Sudah berlangganan dari sesi INI atau dari IP yang sama belakangan —
+      // menawarkan kartu email berulang kali ke orang yang sudah mengisinya
+      // hanya membuat jengkel.
       const sudah = (await q(
-        `SELECT 1 FROM leads WHERE source='chat' AND meta->>'session_id' = $1 LIMIT 1`, [sid])).rowCount > 0;
+        `SELECT 1 FROM leads
+          WHERE source='chat'
+            AND (meta->>'session_id' = $1
+                 OR (meta->>'ip' = $2 AND created_at > now() - interval '24 hours'))
+          LIMIT 1`, [sid, ip])).rowCount > 0;
       return res.json({
         sessionId: sid,
         reply: String(intgCfg.chat_limit_message ||

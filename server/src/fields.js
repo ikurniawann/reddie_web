@@ -166,6 +166,11 @@ export const FIELDS = {
     help: 'Berapa pesan yang boleh dikirim pengunjung dalam satu sesi sebelum diminta berlangganan. Isi 0 untuk tanpa batas.',
     value: 10,
   },
+  'integrations.chat_limit_ip': {
+    label: 'Batas pesan per jaringan (24 jam)', type: 'int',
+    help: 'Penahan agar batas per sesi tidak bisa dilewati sekadar dengan menyegarkan halaman atau membuka tab baru. Dihitung dari alamat IP — dan karena satu kantor biasanya berbagi satu IP, angkanya perlu beberapa kali lipat batas per sesi. Isi 0 untuk mematikan.',
+    value: 40,
+  },
   'integrations.chat_limit_message': {
     label: 'Ajakan berlangganan', type: 'textarea', max: 400,
     help: 'Muncul di chat saat batas pesan tercapai, tepat di atas kolom isian email.',
