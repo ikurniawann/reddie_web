@@ -12,7 +12,7 @@
 // ============================================================
 
 import { q } from './db.js';
-import { googleReady, createCalendarEvent } from './google.js';
+import { googleReady, createCalendarEvent, verifyAccessToken } from './google.js';
 
 export class TaskError extends Error {
   constructor(message, status = 502) { super(message); this.status = status; }
@@ -29,6 +29,7 @@ export async function taskConfig() {
     phone: String(v.task_phone || '').trim(),
     token: process.env.TASK_API_TOKEN || '',
     eventId: String(v.task_event_id || '').trim(),
+    googleClientId: String(v.google_client_id || '').trim(),
     divisionId: String(v.task_division_id || '').trim(),
   };
 }
@@ -374,7 +375,7 @@ export async function listSchedule(cfg) {
  * Bila belum, meeting tetap dicatat sebagai task bertenggat di sistem task —
  * jadi tombolnya tidak pernah menjadi tombol mati.
  */
-export async function createMeeting(cfg, { title, start, guests, durationMin = 60 }) {
+export async function createMeeting(cfg, { title, start, guests, durationMin = 60, googleToken }) {
   const t = String(title || '').trim();
   if (!t) throw new TaskError('Judul meeting wajib diisi.', 400);
 
@@ -386,15 +387,26 @@ export async function createMeeting(cfg, { title, start, guests, durationMin = 6
   const emails = String(guests || '')
     .split(/[,\s;]+/).map(x => x.trim()).filter(x => /^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(x));
 
+  // Token pengunjung (SSO) diutamakan: acaranya masuk ke kalender dia sendiri,
+  // bukan ke kalender bersama milik pemilik situs.
+  if (googleToken) {
+    let who = null;
+    try { who = await verifyAccessToken(googleToken, cfg.googleClientId); }
+    catch (e) { throw new TaskError(e.message, 401); }
+    const ev = await createCalendarEvent({
+      title: t, startISO: startDate.toISOString(), endISO: endDate.toISOString(),
+      guests: emails, description: 'Dibuat lewat Reddie.',
+    }, googleToken);
+    return { ok: true, google: true, sso: true, akun: who.email, id: ev.id, link: ev.link,
+             mulai: startDate.toISOString(), peserta: emails.length };
+  }
+
   if (googleReady()) {
     const ev = await createCalendarEvent({
-      title: t,
-      startISO: startDate.toISOString(),
-      endISO: endDate.toISOString(),
-      guests: emails,
-      description: 'Dibuat lewat Reddie.',
+      title: t, startISO: startDate.toISOString(), endISO: endDate.toISOString(),
+      guests: emails, description: 'Dibuat lewat Reddie.',
     });
-    return { ok: true, google: true, id: ev.id, link: ev.link,
+    return { ok: true, google: true, sso: false, id: ev.id, link: ev.link,
              mulai: startDate.toISOString(), peserta: emails.length };
   }
 

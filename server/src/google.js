@@ -20,8 +20,38 @@ export function googleReady() {
   return !!(CLIENT_ID && CLIENT_SECRET && REFRESH_TOKEN);
 }
 
-export function googleStatus() {
-  return { connected: googleReady(), account: ACCOUNT || null, calendar: CALENDAR_ID };
+export function googleStatus(clientId) {
+  return {
+    // Dua jalur yang berdiri sendiri:
+    //  - sso    : pengunjung masuk sendiri, acara masuk ke kalendernya sendiri
+    //  - server : refresh token milik pemilik situs, semua acara ke satu kalender
+    sso: !!clientId,
+    clientId: clientId || null,
+    scope: SCOPE,
+    server: googleReady(),
+    account: ACCOUNT || null,
+    calendar: CALENDAR_ID,
+  };
+}
+
+// Hanya izin membuat & mengubah acara. Sengaja bukan scope 'calendar' penuh,
+// supaya Reddie tidak pernah bisa menghapus kalender atau mengubah setelannya.
+export const SCOPE = 'https://www.googleapis.com/auth/calendar.events';
+
+// Verifikasi token dari browser sebelum dipakai: memastikan ia benar milik
+// aplikasi kita dan lingkupnya memang yang diminta. Tanpa ini, token curian
+// dari aplikasi lain bisa dipakai lewat endpoint kita.
+export async function verifyAccessToken(token, clientId) {
+  const res = await fetch(
+    'https://oauth2.googleapis.com/tokeninfo?access_token=' + encodeURIComponent(token),
+    { signal: AbortSignal.timeout(10_000) });
+  const d = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error('Sesi Google tidak berlaku. Masuk ulang.');
+  if (clientId && d.aud !== clientId) throw new Error('Token Google bukan milik aplikasi ini.');
+  if (!String(d.scope || '').includes('calendar.events')) {
+    throw new Error('Izin kalender belum diberikan. Masuk ulang dan setujui aksesnya.');
+  }
+  return { email: d.email || null, expires: Number(d.expires_in || 0) };
 }
 
 // Access token berumur ~1 jam. Disimpan di memori dan disegarkan bila
@@ -53,8 +83,11 @@ async function accessToken() {
  * Buat acara di Google Calendar.
  * @param {{title, startISO, endISO, guests: string[], description}} m
  */
-export async function createCalendarEvent(m) {
-  const token = await accessToken();
+export async function createCalendarEvent(m, providedToken) {
+  // Token dari pengunjung (SSO) dipakai apa adanya; bila tidak ada, jatuh ke
+  // refresh token milik server.
+  const token = providedToken || await accessToken();
+  const calendar = providedToken ? 'primary' : CALENDAR_ID;
   const body = {
     summary: String(m.title || 'Meeting').slice(0, 300),
     description: m.description || 'Dibuat lewat Reddie.',
@@ -64,7 +97,7 @@ export async function createCalendarEvent(m) {
   if (m.guests && m.guests.length) body.attendees = m.guests.map(e => ({ email: e }));
 
   const res = await fetch(
-    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(CALENDAR_ID)}/events?sendUpdates=all`,
+    `https://www.googleapis.com/calendar/v3/calendars/${encodeURIComponent(calendar)}/events?sendUpdates=all`,
     {
       method: 'POST',
       headers: { authorization: 'Bearer ' + token, 'content-type': 'application/json' },

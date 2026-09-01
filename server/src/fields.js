@@ -152,6 +152,11 @@ export const FIELDS = {
     help: 'Basis API manajemen task. Kosongkan untuk mematikan panel Task Focus.',
     value: 'https://ingat.reddie.id/api/agent',
   },
+  'integrations.google_client_id': {
+    label: 'Google OAuth Client ID', type: 'text', max: 200,
+    help: 'Client ID dari Google Cloud Console. Boleh terlihat publik — memang dirancang begitu. Diisi supaya pengunjung bisa masuk dengan akun Google sendiri dan meeting masuk ke kalendernya sendiri. Kosongkan untuk mematikan tombol masuk Google.',
+    value: '',
+  },
   'integrations.task_limit': {
     label: 'Jumlah task yang ditampilkan', type: 'int',
     help: 'Berapa task berjalan yang tampil di panel. Sisanya tetap dihitung di angka progres.',

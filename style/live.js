@@ -13,6 +13,8 @@
         ready: false,          // true bila /api/content berhasil dimuat
         models: [],
         settings: {},
+        gToken: null,      // token Google pengunjung, sengaja hanya di memori
+        gEmail: null,
         skills: [],
         sessionId: sessionStorage.getItem('reddieSession') || null,
     };
@@ -444,6 +446,53 @@
           });
     });
 
+    // ── Masuk Google (SSO) ───────────────────────────────────────────
+    // Token akses disimpan di MEMORI saja, tidak di localStorage: ia berlaku
+    // satu jam dan tidak perlu bertahan melewati muat ulang halaman. Menaruh
+    // token orang lain di penyimpanan browser hanya menambah permukaan risiko
+    // tanpa manfaat.
+    var gisLoading = null;
+
+    function loadGis() {
+        if (window.google && window.google.accounts && window.google.accounts.oauth2) {
+            return Promise.resolve();
+        }
+        if (gisLoading) return gisLoading;
+        gisLoading = new Promise(function (resolve, reject) {
+            var sc = document.createElement('script');
+            sc.src = 'https://accounts.google.com/gsi/client';
+            sc.async = true;
+            sc.onload = resolve;
+            sc.onerror = function () { reject(new Error('Skrip Google gagal dimuat.')); };
+            document.head.appendChild(sc);
+        });
+        return gisLoading;
+    }
+
+    function googleSignIn(clientId, scope, onDone) {
+        loadGis().then(function () {
+            var client = window.google.accounts.oauth2.initTokenClient({
+                client_id: clientId,
+                scope: scope || 'https://www.googleapis.com/auth/calendar.events',
+                callback: function (resp) {
+                    if (resp && resp.access_token) {
+                        state.gToken = resp.access_token;
+                        onDone(null);
+                    } else {
+                        onDone(new Error(resp && resp.error_description
+                            ? resp.error_description : 'Akses Google tidak diberikan.'));
+                    }
+                },
+                error_callback: function (err) {
+                    onDone(new Error(err && err.type === 'popup_closed'
+                        ? 'Jendela masuk ditutup sebelum selesai.'
+                        : 'Masuk Google gagal.'));
+                },
+            });
+            client.requestAccessToken();
+        }).catch(onDone);
+    }
+
     // ── Modul Schedule ───────────────────────────────────────────────
     var schedTab = 'list';
 
@@ -480,17 +529,22 @@
 
     function renderMeeting(box, d) {
         var g = d.google || {};
-        var siap = !!g.connected;
+        var masuk = !!state.gToken;
         box.innerHTML =
             '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;margin-bottom:.55rem;">' +
               'MEETING BARU</div>' +
-            (siap
+            (masuk
               ? '<p style="font-size:.75rem;color:#16a34a;margin:0 0 .7rem;">' +
-                '<i class="fa-solid fa-circle-check"></i> Tersambung ke Google Calendar' +
-                (g.account ? ' · ' + esc(g.account) : '') + '</p>'
-              : '<p style="font-size:.75rem;color:#ca8a04;margin:0 0 .7rem;line-height:1.5;">' +
-                '<i class="fa-solid fa-circle-exclamation"></i> Google Calendar belum tersambung. ' +
-                'Meeting akan dicatat sebagai jadwal internal saja.</p>') +
+                '<i class="fa-solid fa-circle-check"></i> Masuk sebagai ' +
+                esc(state.gEmail || 'akun Google Anda') + ' — meeting masuk ke kalender Anda sendiri.</p>'
+              : g.sso
+                ? '<button data-gsignin style="width:100%;margin-bottom:.8rem;background:#fff;color:#3c4043;' +
+                  'border:1px solid #dadce0;border-radius:8px;padding:.6rem;font:600 .8rem system-ui;' +
+                  'cursor:pointer;display:flex;align-items:center;justify-content:center;gap:.5rem;">' +
+                  '<i class="fa-brands fa-google" style="color:#4285f4;"></i> Masuk dengan Google</button>'
+                : '<p style="font-size:.75rem;color:#ca8a04;margin:0 0 .7rem;line-height:1.5;">' +
+                  '<i class="fa-solid fa-circle-exclamation"></i> Google Calendar belum dikonfigurasi. ' +
+                  'Meeting akan dicatat sebagai jadwal internal.</p>') +
             '<div style="display:flex;flex-direction:column;gap:.5rem;">' +
               '<input data-mtitle placeholder="Judul meeting" style="font:inherit;font-size:.78rem;padding:.5rem .6rem;' +
                 'border:1px solid rgba(0,0,0,.15);border-radius:8px;">' +
@@ -513,6 +567,7 @@
         return fetch(API + '/schedule', { signal: AbortSignal.timeout(15000) })
             .then(function (r) { return r.json().catch(function () { return {}; }); })
             .then(function (d) {
+                window.__reddieSchedule = d;
                 if (schedTab === 'meeting') renderMeeting(box, d); else renderSchedList(box, d);
             })
             .catch(function () {
@@ -544,6 +599,17 @@
             }
             return;
         }
+        if (e.target.closest('[data-gsignin]')) {
+            e.preventDefault();
+            var btn = e.target.closest('[data-gsignin]');
+            btn.disabled = true; btn.textContent = 'Membuka Google…';
+            var g = (window.__reddieSchedule || {}).google || {};
+            googleSignIn(g.clientId, g.scope, function (err) {
+                if (err) { btn.disabled = false; btn.innerHTML = '<i class="fa-brands fa-google"></i> Masuk dengan Google'; meetMsg(err.message, true); return; }
+                loadSchedule();
+            });
+            return;
+        }
         if (e.target.closest('[data-mcreate]')) { e.preventDefault(); createMeeting(); }
     });
 
@@ -561,7 +627,11 @@
         meetMsg('Membuat meeting…');
         fetch(API + '/meetings', {
             method: 'POST',
-            headers: { 'content-type': 'application/json' },
+            headers: (function () {
+                var h = { 'content-type': 'application/json' };
+                if (state.gToken) h['x-google-token'] = state.gToken;
+                return h;
+            })(),
             body: JSON.stringify({ title: title.trim(), start: when, guests: guests.trim() }),
         }).then(function (r) {
             return r.json().catch(function () { return {}; }).then(function (d) {
@@ -569,7 +639,10 @@
                 return d;
             });
         }).then(function (d) {
-            meetMsg(d.google ? 'Meeting dibuat di Google Calendar.' : 'Meeting dicatat sebagai jadwal internal.');
+            if (d.akun) state.gEmail = d.akun;
+            meetMsg(d.google
+                ? 'Meeting dibuat di Google Calendar' + (d.akun ? ' (' + d.akun + ').' : '.')
+                : 'Meeting dicatat sebagai jadwal internal.');
             var t = document.querySelector('[data-mtitle]'); if (t) t.value = '';
         }).catch(function (err) { meetMsg(err.message, true); });
     }
@@ -662,7 +735,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g3';
+        sc.src = 'style/editor.js?v=20260901-g4';
         document.body.appendChild(sc);
     }
 

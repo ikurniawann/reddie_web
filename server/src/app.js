@@ -263,7 +263,7 @@ export function buildApp() {
   app.get('/api/schedule', taskGuard(async (cfg, _req, res) => {
     const entries = await listSchedule(cfg);
     res.set('cache-control', 'no-store');
-    res.json({ configured: true, entries, google: googleStatus() });
+    res.json({ configured: true, entries, google: googleStatus(cfg.googleClientId) });
   }));
 
   app.post('/api/meetings', taskGuard(async (cfg, req, res) => {
@@ -271,6 +271,7 @@ export function buildApp() {
       title: req.body?.title,
       start: req.body?.start,
       guests: req.body?.guests,
+      googleToken: String(req.headers['x-google-token'] || '') || undefined,
     });
     res.status(201).json(r);
   }));
