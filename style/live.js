@@ -62,13 +62,25 @@
                 });
             });
         },
+        // Mengembalikan promise yang BENAR-BENAR ditolak saat gagal. Dulu
+        // kegagalan ditelan diam-diam, sehingga formulir kontak selalu
+        // mengaku berhasil walau pesannya tidak pernah sampai. Pemanggil yang
+        // memang tidak peduli hasilnya cukup menambahkan .catch() sendiri.
         lead: function (data) {
-            // fire-and-forget; kegagalan tidak boleh mengganggu UX
             return fetch(API + '/leads', {
                 method: 'POST',
                 headers: { 'content-type': 'application/json' },
                 body: JSON.stringify(data),
-            }).catch(function () {});
+            }).then(function (r) {
+                return r.json().catch(function () { return {}; }).then(function (d) {
+                    if (!r.ok) {
+                        var e = new Error(d.error || 'Gagal mengirim (HTTP ' + r.status + ')');
+                        e.userMessage = d.error;
+                        throw e;
+                    }
+                    return d;
+                });
+            });
         },
     };
 
@@ -1315,7 +1327,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-j3';
+        sc.src = 'style/editor.js?v=20260901-j4';
         document.body.appendChild(sc);
     }
 

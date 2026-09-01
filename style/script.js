@@ -1216,51 +1216,82 @@ function setupDashboardDemo() {
 
 }
 
-// Contact Form submission mockup with interactive feedback
+// Formulir kontak — pengiriman sungguhan.
+//
+// Versi lama memanggil API sambil mengabaikan hasilnya, lalu menampilkan
+// "Message Sent Successfully!" setelah jeda palsu 1,5 detik. Artinya pesan
+// yang GAGAL terkirim pun dilaporkan berhasil, dan pengirimnya menunggu
+// balasan yang tidak akan pernah datang. Kini keberhasilan hanya
+// ditampilkan setelah server benar-benar menerimanya.
 function setupContactForm() {
     const form = document.getElementById('contactForm');
     const successMessage = document.getElementById('formSuccessMessage');
-    
     if (!form || !successMessage) return;
-    
+
+    // Baris galat disisipkan sekali, tepat di atas tombol kirim.
+    let errBox = form.querySelector('.contact-error');
+    if (!errBox) {
+        errBox = document.createElement('p');
+        errBox.className = 'contact-error';
+        errBox.style.cssText = 'display:none;color:#ff6b6b;font-size:0.85rem;margin:0 0 0.8rem;' +
+                               'line-height:1.5;text-align:left;';
+        const btn = form.querySelector('.submit-btn');
+        if (btn) form.insertBefore(errBox, btn);
+    }
+    const showErr = (t) => { errBox.textContent = t; errBox.style.display = t ? 'block' : 'none'; };
+
     form.addEventListener('submit', (e) => {
         e.preventDefault();
-        
+
         const submitBtn = form.querySelector('.submit-btn');
         const submitText = submitBtn.querySelector('span');
-        
-        // Get input values
-        const name = document.getElementById('name').value;
-        const email = document.getElementById('email').value;
-        const message = document.getElementById('message').value;
-        
-        // Visual "Sending..." Feedback state
-        submitText.textContent = 'SENDING...';
+        const labelAsli = submitText.textContent;
+
+        const name = document.getElementById('name').value.trim();
+        const email = document.getElementById('email').value.trim();
+        const message = document.getElementById('message').value.trim();
+
+        showErr('');
+        if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) {
+            showErr('Alamat email belum benar. Contoh: nama@perusahaan.com');
+            document.getElementById('email').focus();
+            return;
+        }
+        if (!message) {
+            showErr('Pesannya masih kosong — ceritakan sedikit kebutuhan Anda.');
+            document.getElementById('message').focus();
+            return;
+        }
+
+        submitText.textContent = 'MENGIRIM...';
         submitBtn.style.pointerEvents = 'none';
         submitBtn.style.opacity = '0.7';
-        
-        // Kirim lead ke server (fire-and-forget; kegagalan tidak mengganggu UX)
-        if (window.REDDIE_API) {
-            window.REDDIE_API.lead({ name: name, email: email, message: message, source: 'contact' });
+
+        const selesai = () => {
+            submitText.textContent = labelAsli;
+            submitBtn.style.pointerEvents = '';
+            submitBtn.style.opacity = '1';
+        };
+
+        // Tanpa API (mode statis), tidak ada gunanya berpura-pura terkirim.
+        if (!window.REDDIE_API) {
+            selesai();
+            showErr('Layanan sedang tidak tersambung. Coba lagi sebentar lagi.');
+            return;
         }
-        
-        // Simulate API call delay
-        setTimeout(() => {
-            // Log for developer inspection
-            console.log('--- REDDIE CONTACT FORM SUBMISSION ---');
-            console.log(`Name: ${name}`);
-            console.log(`Email: ${email}`);
-            console.log(`Message: ${message}`);
-            console.log('-------------------------------------');
-            
-            // Fade out form and fade in success message
-            form.style.opacity = '0';
-            setTimeout(() => {
-                form.style.display = 'none';
-                successMessage.classList.add('active');
-            }, 400);
-            
-        }, 1500);
+
+        window.REDDIE_API.lead({ name, email, message, source: 'contact' })
+            .then(() => {
+                form.style.opacity = '0';
+                setTimeout(() => {
+                    form.style.display = 'none';
+                    successMessage.classList.add('active');
+                }, 400);
+            })
+            .catch((err) => {
+                selesai();
+                showErr((err && err.userMessage) || 'Pesan gagal terkirim. Periksa koneksi Anda lalu coba lagi.');
+            });
     });
 }
 
@@ -1785,7 +1816,9 @@ function setupLoginModal() {
         
         // Simpan email sebagai lead (fire-and-forget)
         if (window.REDDIE_API) {
-            window.REDDIE_API.lead({ email: email, source: 'login' });
+            // Sengaja diabaikan hasilnya: ini pencatatan sampingan, bukan
+            // inti dari tindakan pengguna di jendela masuk.
+            window.REDDIE_API.lead({ email: email, source: 'login' }).catch(function () {});
         }
         
         setTimeout(() => {
