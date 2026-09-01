@@ -1,0 +1,132 @@
+{
+  "name": "Reddie — Demo Otomasi Lintas Sistem",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reddie-demo",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000001",
+      "name": "Dipicu Reddie",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "webhookId": "a1000000-0000-4000-8000-0000000000ff"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://reddie-api:8080/api/leads",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ name: 'Otomasi n8n', message: 'Dijalankan dari panel Reddie pada ' + new Date().toLocaleString('id-ID', { timeZone: 'Asia/Jakarta' }) + '. Baris ini dibuat otomatis oleh workflow, bukan diketik manusia.', source: 'chat' }) }}",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000002",
+      "name": "Catat ke Dasbor",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        40,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://reddie-api:8080/api/crypto",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000003",
+      "name": "Ambil Data Pasar",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        300,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "// Menyusun kalimat yang dibaca orang, bukan JSON mentah.\nconst semua = $input.all();\nconst pasar = semua.map(i => i.json).find(j => Array.isArray(j.coins));\nconst koin = pasar && pasar.coins && pasar.coins[0];\nconst jam = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });\n\nconst baris = [\n  'Otomasi selesai pada ' + jam + ' WIB.',\n  '',\n  '1. Satu catatan baru ditulis ke dasbor Reddie — buka tab \"Pesan masuk\" untuk melihatnya.',\n  koin\n    ? '2. Data pasar diambil langsung dari sumber luar: ' + koin.name + ' (' + koin.symbol + ') ' + (koin.change24h >= 0 ? 'naik ' : 'turun ') + Math.abs(koin.change24h).toFixed(1) + '% dalam 24 jam.'\n    : '2. Data pasar diambil, tetapi sumbernya sedang tidak mengembalikan hasil.',\n  '3. Ringkasan ini disusun n8n lalu dikirim balik ke Reddie.',\n  '',\n  'Tiga sistem berbeda bekerja dari satu klik, tanpa ada yang mengetik apa pun.'\n];\n\nreturn [{ json: { pesan: baris.join('\\n') } }];"
+      },
+      "id": "a1000000-0000-4000-8000-000000000004",
+      "name": "Susun Ringkasan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        540,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify({ pesan: $json.pesan }) }}",
+        "options": {}
+      },
+      "id": "a1000000-0000-4000-8000-000000000005",
+      "name": "Balas ke Reddie",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        780,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Dipicu Reddie": {
+      "main": [
+        [
+          {
+            "node": "Catat ke Dasbor",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Catat ke Dasbor": {
+      "main": [
+        [
+          {
+            "node": "Ambil Data Pasar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil Data Pasar": {
+      "main": [
+        [
+          {
+            "node": "Susun Ringkasan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Ringkasan": {
+      "main": [
+        [
+          {
+            "node": "Balas ke Reddie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}
