@@ -1,7 +1,13 @@
 # Workflow n8n untuk demo Reddie
 
-`reddie-demo-otomasi.json` adalah workflow contoh yang dipakai panel
-**Automation** di landing page. Impor lewat n8n → Workflows → Import from File,
+Dua workflow contoh dipakai panel **Automation**:
+
+| Berkas | Yang dilakukan |
+|---|---|
+| `reddie-demo-otomasi.json` | Menulis ke dasbor, menarik data pasar, membalas ringkasan |
+| `reddie-laporan-berita-pdf.json` | Mengambil 5 berita lalu menyusunnya jadi PDF beserta sampulnya |
+
+`reddie-demo-otomasi.json` impor lewat n8n → Workflows → Import from File,
 atau kirim ke `POST /api/v1/workflows` dengan header `X-N8N-API-KEY`.
 
 ## Yang dilakukannya

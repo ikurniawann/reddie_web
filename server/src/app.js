@@ -15,6 +15,7 @@ import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskE
          TASK_TOOLS, runTaskTool, listSchedule, createMeeting } from './tasks.js';
 import { googleStatus } from './google.js';
 import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleTool } from './news.js';
+import { buatLaporanBerita, ReportError } from './report.js';
 import { fetchTrending, CryptoError, CRYPTO_TOOL, runCryptoTool } from './crypto.js';
 import { checkConnections, listWorkflows, runWorkflow, n8nReady,
          AUTOMATION_TOOLS, runAutomationTool, AutomationError } from './automation.js';
@@ -390,6 +391,28 @@ export function buildApp() {
       const status = e instanceof AutomationError ? e.status : 500;
       res.status(status < 500 ? status : 200).json({
         ok: false, error: e instanceof AutomationError ? e.message : 'Gagal menjalankan workflow.' });
+    }
+  });
+
+  // ═══════════════ LAPORAN PDF ═══════════════
+  // Dipanggil workflow n8n maupun langsung. PDF dan sampulnya ditulis ke
+  // volume media yang sudah dilayani nginx, jadi keduanya bisa dibuka
+  // dan diunduh tanpa endpoint pengunduh tersendiri.
+
+  app.post('/api/reports/news', async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try {
+      const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+      const hasil = await buatLaporanBerita({
+        limit: Math.min(Math.max(Number(req.body?.limit) || 5, 1), 15),
+        feeds: cfg.news_feeds, query: cfg.news_query,
+        lang: cfg.news_lang, country: cfg.news_country,
+      });
+      res.status(201).json(hasil);
+    } catch (e) {
+      console.error('[report]', e.message);
+      res.json({ ok: false, error: e instanceof ReportError ? e.message : 'Laporan gagal dibuat.' });
     }
   });
 

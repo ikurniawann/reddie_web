@@ -67,9 +67,13 @@ function parseRss(xml) {
     const dateStr = pick(b, /<pubDate>([\s\S]*?)<\/pubDate>/);
     const d = dateStr ? new Date(dateStr) : null;
     const link = pick(b, /<link>([\s\S]*?)<\/link>/);
+    // Ringkasan dari RSS: cukup untuk digest, dan jauh lebih cepat daripada
+    // mengambil setiap artikel satu per satu.
+    const desc = pick(b, /<description>(?:<!\[CDATA\[)?([\s\S]*?)(?:\]\]>)?<\/description>/) || '';
     return {
       title,
       link,
+      summary: desc.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim().slice(0, 300),
       // Hanya Google News yang menyediakan tag <source>. Untuk umpan media
       // langsung, nama medianya diturunkan dari domainnya sendiri.
       source: source || namaDomain(link),

@@ -937,8 +937,40 @@ body {
     transition: filter 0.4s ease, opacity 0.4s ease, transform 0.4s ease;
 }
 
-.chat-welcome-state.graph-focus .chat-welcome-header {
-    opacity: 0.85;
+/* Latar yang dikaburkan jadi jauh lebih terang, dan teks putih bawaan
+   tenggelam di atasnya. Di mode ini judul dan subjudul dibuat gelap. */
+.chat-welcome-state.graph-focus .chat-welcome-title,
+.chat-welcome-state.graph-focus .chat-welcome-subtitle {
+    color: #111827;
+    text-shadow: none;
+}
+
+.chat-welcome-state.graph-focus .badge-protected {
+    background: rgba(17, 24, 39, 0.08);
+    color: #374151;
+}
+
+/* Isi panel bisa panjang: diagram, daftar otomasi, lalu hasilnya. Tanpa
+   scroll, tombol Jalankan terdorong keluar layar dan seolah tidak ada.
+   Yang digulung hanya lapisan konten — video latar tetap diam di
+   belakangnya karena berada di luar wadah ini. */
+.chat-welcome-state.graph-focus .chat-welcome-content {
+    justify-content: flex-start;
+    gap: 1.1rem;
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+}
+
+.chat-welcome-state.graph-focus .chat-welcome-content::-webkit-scrollbar { width: 6px; }
+.chat-welcome-state.graph-focus .chat-welcome-content::-webkit-scrollbar-thumb {
+    background: rgba(0, 0, 0, 0.18);
+    border-radius: 99px;
+}
+
+/* Chip saran ikut mengalir bersama isi, bukan menempel di dasar. */
+.chat-welcome-state.graph-focus .chat-welcome-footer-chips {
+    flex: 0 0 auto;
 }
 
 /* Panel kaca tempat diagram berdiri. */

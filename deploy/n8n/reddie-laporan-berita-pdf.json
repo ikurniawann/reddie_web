@@ -1,0 +1,109 @@
+{
+  "name": "Reddie — Laporan Berita PDF",
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "reddie-news-pdf",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000001",
+      "name": "Dipicu Reddie",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2,
+      "position": [
+        -200,
+        0
+      ],
+      "webhookId": "b2000000-0000-4000-8000-0000000000ff"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "http://reddie-api:8080/api/reports/news",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ JSON.stringify({ limit: 5 }) }}",
+        "options": {
+          "timeout": 60000
+        }
+      },
+      "id": "b2000000-0000-4000-8000-000000000002",
+      "name": "Ambil 5 Berita & Susun PDF",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        60,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "mode": "runOnceForAllItems",
+        "jsCode": "const r = $input.first().json;\nif (!r || !r.ok) {\n  return [{ json: { pesan: 'Laporan gagal dibuat: ' + ((r && r.error) || 'sumber berita tidak merespons') } }];\n}\nconst jam = new Date().toLocaleTimeString('id-ID', { timeZone: 'Asia/Jakarta', hour: '2-digit', minute: '2-digit' });\nconst judul = (r.berita || []).map((b, i) => '  ' + (i + 1) + '. ' + b.judul + ' (' + b.sumber + ')').join('\\n');\nconst pesan = [\n  'Laporan selesai pada ' + jam + ' WIB.',\n  '',\n  r.jumlah + ' berita terkini diambil dari sumber yang tersambung, lalu disusun',\n  'menjadi satu dokumen PDF berukuran ' + Math.max(1, Math.round(r.bytes / 1024)) + ' KB:',\n  '',\n  judul,\n  '',\n  'Dokumennya bisa dibuka atau diunduh lewat tombol di bawah.'\n].join('\\n');\nreturn [{ json: { pesan, pdf: r.pdf, thumb: r.thumb, judul: r.judul, jumlah: r.jumlah } }];"
+      },
+      "id": "b2000000-0000-4000-8000-000000000003",
+      "name": "Susun Ringkasan",
+      "type": "n8n-nodes-base.code",
+      "typeVersion": 2,
+      "position": [
+        320,
+        0
+      ]
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={{ JSON.stringify($json) }}",
+        "options": {}
+      },
+      "id": "b2000000-0000-4000-8000-000000000004",
+      "name": "Balas ke Reddie",
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        560,
+        0
+      ]
+    }
+  ],
+  "connections": {
+    "Dipicu Reddie": {
+      "main": [
+        [
+          {
+            "node": "Ambil 5 Berita & Susun PDF",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Ambil 5 Berita & Susun PDF": {
+      "main": [
+        [
+          {
+            "node": "Susun Ringkasan",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Susun Ringkasan": {
+      "main": [
+        [
+          {
+            "node": "Balas ke Reddie",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  }
+}

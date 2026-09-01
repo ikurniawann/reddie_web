@@ -918,8 +918,9 @@
             '<p style="font-size:.72rem;color:#6b7280;text-align:center;margin:.2rem 0 0;">' +
               aktif + ' dari ' + conns.length + ' sistem aktif · diperiksa langsung saat panel dibuka</p>' +
             bagianWf +
-            '<p data-automsg style="font-size:.75rem;color:#6b7280;margin:.6rem 0 0;text-align:center;' +
-              'white-space:pre-wrap;line-height:1.55;"></p>';
+            '<p data-automsg style="font-size:.75rem;color:#374151;margin:.6rem 0 0;text-align:left;' +
+              'white-space:pre-wrap;line-height:1.55;"></p>' +
+            '<div data-autofile style="margin-top:.7rem;"></div>';
     }
 
     function sembunyikanGrafikChat() {
@@ -1001,6 +1002,43 @@
     // Pesan hasil ditulis ke SEMUA elemen [data-automsg] — panel kaca di area
     // chat dan kolom tengah bisa tampil bersamaan, dan hanya memperbarui yang
     // pertama membuat salah satunya menampilkan keadaan basi.
+    // Kartu berkas hasil otomasi: sampul PDF plus dua tombol. Sengaja
+    // menyediakan "buka" DAN "unduh" — saat demo orang ingin melihat isinya
+    // seketika, bukan mencarinya di folder unduhan.
+    function autoFile(d) {
+        var box = document.querySelector('[data-autofile]');
+        if (!box) return;
+        if (!d || !d.pdf) { box.innerHTML = ''; return; }
+        var url = './' + d.pdf;
+        var nama = d.pdf.split('/').pop();
+        box.innerHTML =
+            '<div style="display:flex;gap:.8rem;align-items:flex-start;background:rgba(255,255,255,.7);' +
+              'border:1px solid rgba(0,0,0,.07);border-radius:12px;padding:.7rem;">' +
+              (d.thumb
+                ? '<a href="' + esc(url) + '" target="_blank" rel="noopener" style="flex:0 0 auto;display:block;">' +
+                  '<img src="./' + esc(d.thumb) + '" alt="Sampul laporan" ' +
+                  'style="width:78px;height:110px;object-fit:cover;object-position:top;border-radius:7px;' +
+                  'border:1px solid rgba(0,0,0,.1);background:#fff;display:block;"></a>'
+                : '') +
+              '<div style="flex:1;min-width:0;text-align:left;">' +
+                '<div style="font-size:.82rem;font-weight:700;color:#111827;">' +
+                  esc(d.judul || 'Laporan PDF') + '</div>' +
+                '<div style="font-size:.68rem;color:#6b7280;margin-bottom:.55rem;">' +
+                  (d.jumlah ? d.jumlah + ' berita · ' : '') + esc(nama) + '</div>' +
+                '<div style="display:flex;gap:.45rem;flex-wrap:wrap;">' +
+                  '<a href="' + esc(url) + '" target="_blank" rel="noopener" ' +
+                    'style="background:#16192a;color:#fff;text-decoration:none;border-radius:8px;' +
+                    'padding:.4rem .8rem;font:700 .74rem system-ui;">' +
+                    '<i class="fa-solid fa-eye"></i> Baca</a>' +
+                  '<a href="' + esc(url) + '" download="' + esc(nama) + '" ' +
+                    'style="background:none;color:#374151;text-decoration:none;border:1px solid rgba(0,0,0,.15);' +
+                    'border-radius:8px;padding:.4rem .8rem;font:700 .74rem system-ui;">' +
+                    '<i class="fa-solid fa-download"></i> Unduh</a>' +
+                '</div>' +
+              '</div>' +
+            '</div>';
+    }
+
     function autoMsg(teks, warna) {
         [].forEach.call(document.querySelectorAll('[data-automsg]'), function (el) {
             el.textContent = teks || '';
@@ -1014,6 +1052,7 @@
         e.preventDefault();
         b.disabled = true; b.textContent = 'Menjalankan…';
         autoMsg('Menjalankan otomasi…');
+        autoFile(null);       // bersihkan hasil sebelumnya
         fetch(API + '/automation/run', {
             method: 'POST', headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ id: b.dataset.runwf }),
@@ -1021,12 +1060,13 @@
             return r.json().catch(function () { return {}; });
         }).then(function (d) {
             b.disabled = false; b.textContent = 'Jalankan';
-            if (!d.ok) { autoMsg(d.error || 'Gagal menjalankan.', '#b91c1c'); return; }
+            if (!d.ok) { autoMsg(d.error || 'Gagal menjalankan.', '#b91c1c'); autoFile(null); return; }
             // Workflow yang dirancang baik mengembalikan kalimat siap baca;
             // itu yang ditampilkan, bukan sekadar 'selesai dalam sekian ms'.
-            var isi = d.hasil && typeof d.hasil === 'object' ? (d.hasil.pesan || d.hasil.message) : d.hasil;
-            autoMsg((isi ? String(isi) + '\n\n' : '') +
-                    'Selesai dalam ' + d.ms + ' ms.', '#16a34a');
+            var h = (d.hasil && typeof d.hasil === 'object') ? d.hasil : null;
+            var isi = h ? (h.pesan || h.message) : d.hasil;
+            autoMsg((isi ? String(isi) + '\n\n' : '') + 'Selesai dalam ' + d.ms + ' ms.', '#374151');
+            autoFile(h);      // tampilkan berkas bila workflow menghasilkannya
         }).catch(function () {
             b.disabled = false; b.textContent = 'Jalankan';
             autoMsg('Gagal menghubungi server.', '#b91c1c');
@@ -1293,7 +1333,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-j1';
+        sc.src = 'style/editor.js?v=20260901-j2';
         document.body.appendChild(sc);
     }
 
