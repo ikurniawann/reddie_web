@@ -13,6 +13,8 @@
     "exceljs": "^4.4.0",
     "express": "^5.1.0",
     "jsonwebtoken": "^9.0.2",
+    "mammoth": "^1.8.0",
+    "pdfjs-dist": "^4.9.0",
     "pdfkit": "^0.15.0",
     "pg": "^8.16.0",
     "sharp": "^0.34.0"

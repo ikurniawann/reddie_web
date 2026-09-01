@@ -286,6 +286,73 @@
         else runSync();
     }, true);
 
+    // ── Lampiran: berkas dibaca server, teksnya masuk ke percakapan ──
+    var ACCEPT = '.pdf,.docx,.xlsx,.xlsm,.csv,.txt,.md,.png,.jpg,.jpeg,.webp,.gif,' +
+                 'application/pdf,image/*';
+
+    function uploadAttachment(file) {
+        say('Membaca **' + file.name + '**…');
+        return file.arrayBuffer().then(function (buf) {
+            var h = {
+                'content-type': file.type || 'application/octet-stream',
+                'x-filename': encodeURIComponent(file.name),
+            };
+            if (state.sessionId) h['x-session'] = state.sessionId;
+            return fetch(API + '/attachments', { method: 'POST', headers: h, body: buf });
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+                if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+                return d;
+            });
+        }).then(function (d) {
+            if (d.sessionId) {
+                state.sessionId = d.sessionId;
+                try { sessionStorage.setItem('reddieSession', d.sessionId); } catch (e) {}
+            }
+            var how = {
+                'pdf': 'PDF', 'pdf-ocr': 'PDF hasil pindai, dibaca OCR', 'docx': 'Word',
+                'sheet': 'spreadsheet', 'ocr': 'gambar, dibaca OCR', 'text': 'teks',
+            }[d.method] || d.method;
+            var bits = [how];
+            if (d.pages) bits.push(d.pages + ' halaman');
+            bits.push(d.chars.toLocaleString('id-ID') + ' karakter');
+            say('**' + d.filename + '** terbaca (' + bits.join(', ') + ')' +
+                (d.truncated ? ' — dokumen panjang, hanya bagian awal yang dipakai' : '') +
+                '.\n\nSilakan tanyakan apa saja tentang isinya.');
+        }).catch(function (e) {
+            say('Gagal membaca **' + file.name + '**: ' + e.message);
+        });
+    }
+
+    var attachInput = null;
+    function pickAttachment() {
+        if (!attachInput) {
+            attachInput = document.createElement('input');
+            attachInput.type = 'file';
+            attachInput.accept = ACCEPT;
+            attachInput.multiple = true;
+            attachInput.style.display = 'none';
+            document.body.appendChild(attachInput);
+            attachInput.addEventListener('change', function () {
+                var files = [].slice.call(attachInput.files);
+                attachInput.value = '';
+                if (!files.length) return;
+                openConversation();
+                files.reduce(function (chain, f) {
+                    return chain.then(function () { return uploadAttachment(f); });
+                }, Promise.resolve());
+            });
+        }
+        attachInput.click();
+    }
+
+    document.addEventListener('click', function (e) {
+        if (!state.ready) return;                 // API mati -> biarkan perilaku lama
+        if (!e.target.closest('#optAttach')) return;
+        e.stopPropagation(); e.preventDefault();
+        pickAttachment();
+    }, true);
+
     // ── Lacak pilihan agent & model dari UI yang sudah ada ───────────
     document.addEventListener('click', function (e) {
         var opt = e.target.closest('.agent-opt');
@@ -300,7 +367,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f4';
+        sc.src = 'style/editor.js?v=20260901-f5';
         document.body.appendChild(sc);
     }
 

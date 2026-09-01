@@ -9,6 +9,7 @@ import { fieldSchema, TABLES, ICONS } from './fields.js';
 import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
 import { publishedContent, buildDraft, publish, latestVersion, restoreToDraft, draftStatus } from './content.js';
 import { transcriptFor, buildPDF, buildXLSX, extractTicket, pushWebhook, SkillError } from './skills.js';
+import { extractText, ExtractError, MAX_ATTACH_BYTES, MAX_PER_SESSION } from './extract.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -122,10 +123,33 @@ export function buildApp() {
       `SELECT role, content FROM chat_messages WHERE session_id=$1 AND role IN ('user','assistant')
        ORDER BY id DESC LIMIT 12`, [sid])).rows.reverse();
 
+    // Sisipkan isi lampiran ke instruksi sistem. Dibatasi agar dokumen
+    // panjang tidak menghabiskan jatah token — sisanya dipotong, dan
+    // pemotongan itu dinyatakan supaya model tidak menyimpulkan dari
+    // dokumen yang ia kira utuh padahal tidak.
+    const atts = (await q(
+      `SELECT filename, method, pages, chars, content FROM attachments
+       WHERE session_id=$1 ORDER BY id`, [sid])).rows;
+    let system = aRow.system_prompt;
+    if (atts.length) {
+      const BUDGET = 12000;
+      const per = Math.floor(BUDGET / atts.length);
+      const blocks = atts.map(a => {
+        const body = a.content.slice(0, per);
+        const cut = a.content.length > body.length;
+        return `--- BERKAS: ${a.filename} (${a.method}${a.pages ? ', ' + a.pages + ' halaman' : ''}, ` +
+               `${a.chars} karakter)${cut ? ' — DIPOTONG, hanya bagian awal yang ditampilkan' : ''} ---\n${body}`;
+      });
+      system += `\n\nPengunjung melampirkan ${atts.length} berkas. Isinya di bawah ini. ` +
+        `Jawab berdasarkan isi berkas bila pertanyaannya menyangkut berkas tersebut. ` +
+        `Jangan mengarang isi yang tidak ada di sana; bila ditanya bagian yang terpotong, katakan terus terang.\n\n` +
+        blocks.join('\n\n');
+    }
+
     try {
       const { text } = await complete(mRow.provider, {
         modelId: mRow.model_id,
-        system: aRow.system_prompt,
+        system: system,
         messages: history.map(m => ({ role: m.role, content: m.content })),
         maxTokens: CHAT_MAX_TOKENS,
       });
@@ -137,6 +161,66 @@ export function buildApp() {
       console.error('[chat]', e.message);
       res.status(status).json({ error: 'Layanan AI sedang tidak tersedia. Coba lagi sebentar.', sessionId: sid });
     }
+  });
+
+  // ═══════════════ LAMPIRAN ═══════════════
+  // Teks hasil ekstraksi disimpan; berkas aslinya TIDAK. Unggahan dari
+  // pengunjung anonim akan menumpuk tanpa batas, dan menyajikannya kembali
+  // dari domain sendiri membuka jalur phishing yang tidak perlu ada.
+
+  app.post('/api/attachments',
+    express.raw({ type: () => true, limit: MAX_ATTACH_BYTES }),
+    async (req, res) => {
+      const ip = String(clientIp(req));
+      if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+      try {
+        // Melampirkan berkas sebelum mengetik apa pun adalah urutan yang wajar,
+        // jadi sesi dibuat di sini bila belum ada — bukan menolak pengunjung.
+        let sessionId = String(req.headers['x-session'] || '');
+        if (/^[0-9a-f-]{36}$/i.test(sessionId)) {
+          const sess = await q('SELECT id FROM chat_sessions WHERE id=$1', [sessionId]);
+          if (!sess.rowCount) sessionId = '';
+        } else sessionId = '';
+
+        if (!sessionId) {
+          const a = (await q(`SELECT slug FROM agents WHERE enabled ORDER BY sort LIMIT 1`)).rows[0];
+          const m = (await q(`SELECT model_id FROM ai_models WHERE enabled ORDER BY is_default DESC, sort LIMIT 1`)).rows[0];
+          sessionId = (await q(
+            `INSERT INTO chat_sessions (agent_slug, model_id, ip, user_agent) VALUES ($1,$2,$3,$4) RETURNING id`,
+            [a?.slug || null, m?.model_id || null, ip,
+             String(req.headers['user-agent'] || '').slice(0, 300)])).rows[0].id;
+        }
+
+        const { rows: [{ n }] } = await q(
+          'SELECT count(*)::int AS n FROM attachments WHERE session_id=$1', [sessionId]);
+        if (n >= MAX_PER_SESSION) {
+          return res.status(429).json({ error: `Maksimal ${MAX_PER_SESSION} lampiran per percakapan.` });
+        }
+
+        const name = decodeURIComponent(String(req.headers['x-filename'] || 'berkas')).slice(0, 200);
+        const r = await extractText(req.body, name);
+        const row = (await q(
+          `INSERT INTO attachments (session_id, filename, mime, bytes, method, pages, chars, content)
+           VALUES ($1,$2,$3,$4,$5,$6,$7,$8)
+           RETURNING id, filename, method, pages, chars, bytes`,
+          [sessionId, name, String(req.headers['content-type'] || 'application/octet-stream').slice(0, 100),
+           req.body.length, r.method, r.pages, r.chars, r.text])).rows[0];
+
+        res.status(201).json({ ...row, sessionId, truncated: r.truncated,
+          preview: r.text.slice(0, 220).replace(/\s+/g, ' ') });
+      } catch (e) {
+        if (e instanceof ExtractError) return res.status(e.status).json({ error: e.message });
+        console.error('[attachment]', e);
+        res.status(500).json({ error: 'Berkas gagal diproses. Coba format lain.' });
+      }
+    });
+
+  app.get('/api/attachments', async (req, res) => {
+    const sessionId = String(req.query.sessionId || '');
+    if (!/^[0-9a-f-]{36}$/i.test(sessionId)) return res.json([]);
+    res.json((await q(
+      `SELECT id, filename, method, pages, chars, bytes, created_at
+       FROM attachments WHERE session_id=$1 ORDER BY id`, [sessionId])).rows);
   });
 
   // ═══════════════ AI SKILLS ═══════════════
