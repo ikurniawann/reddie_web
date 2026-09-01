@@ -804,46 +804,30 @@ function setupDashboardDemo() {
             case "Automation":
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Pipelines</span>
-                        <span class="stats-tab">Logs</span>
+                        <span class="stats-tab active" data-cms="console.auto_tab">Connections</span>
+                        <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card">
-                            <div class="billing-header">
-                                <h3>Automation Pipelines</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-gears"></i></span>
-                            </div>
-                            <div>
-                                <div class="section-label">ACTIVE FLOWS</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type">Refund Requests Auto-reply</span>
-                                        <span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700; margin-top: 2px;"><i class="fa-solid fa-circle-play"></i> Active (Auto-Run)</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type">Long Email Summary</span>
-                                        <span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700; margin-top: 2px;"><i class="fa-solid fa-circle-play"></i> Active (Draft Only)</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type">VIP Escalation Rules</span>
-                                        <span class="dist-val" style="font-size: 0.8rem; color: #22c55e; font-weight: 700; margin-top: 2px;"><i class="fa-solid fa-circle-play"></i> Active (Alert Team)</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <button class="btn-escalate">Trigger Test Run</button>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem;">
+                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
+                                data-cms="console.auto_title">Automation</h3>
+                            <i class="fa-solid fa-diagram-project" style="font-size:1.05rem;color:#374151;"></i>
+                        </div>
+                        <div data-autopanel>
+                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Memeriksa koneksi…</p>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "Automation Engine";
-                welcomeSubtitleText = "Create pipelines and rules to trigger instant AI agent responses.";
+                welcomeTitleText = "Automation Console";
+                welcomeSubtitleText = "Lihat apa yang tersambung, dan jalankan otomasinya lewat percakapan.";
                 chipsHTML = `
-                    <button class="chip">Build refund auto-reply</button>
-                    <button class="chip">Auto-tag billing tickets</button>
-                    <button class="chip">Escalate VIPs to Slack</button>
-                    <button class="chip">Draft customer greeting</button>
+                    <button class="chip">Sistem apa saja yang tersambung?</button>
+                    <button class="chip">Workflow apa yang tersedia?</button>
+                    <button class="chip">Jalankan workflow yang aktif</button>
+                    <button class="chip">Apa yang bisa diotomasi dari sini?</button>
                 `;
                 break;
-                
+
             case "Connectivity":
                 statsHTML = `
                     <div class="stats-tabs">
@@ -1042,6 +1026,7 @@ function setupDashboardDemo() {
         if (tabName === 'Task & Scheduling' && window.REDDIE_SCHEDULE) window.REDDIE_SCHEDULE();
         if (tabName === 'Research' && window.REDDIE_NEWS) window.REDDIE_NEWS();
         if (tabName === 'Analyze' && window.REDDIE_CRYPTO) window.REDDIE_CRYPTO();
+        if (tabName === 'Automation' && window.REDDIE_AUTOMATION) window.REDDIE_AUTOMATION();
     }
     
     function getAgentMockResponse(query, turnNum) {

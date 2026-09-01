@@ -81,6 +81,8 @@ export const FIELDS = {
   'console.sched_tab1':  { label: 'Tab jadwal',        type: 'text', max: 20, help: 'Tab pertama di modul Schedule.', value: 'Schedule List' },
   'console.sched_tab2':  { label: 'Tab meeting',       type: 'text', max: 20, help: 'Tab kedua di modul Schedule.', value: 'Meeting' },
   'console.sched_title': { label: 'Judul modul jadwal', type: 'text', max: 24, help: 'Judul besar di modul Schedule.', value: 'Schedule' },
+  'console.auto_tab':   { label: 'Tab automation',        type: 'text', max: 20, help: 'Tab di modul Automation.', value: 'Connections' },
+  'console.auto_title': { label: 'Judul panel automation', type: 'text', max: 24, help: 'Judul besar di modul Automation.', value: 'Automation' },
   'console.inv_tab':   { label: 'Tab investasi',       type: 'text', max: 20, help: 'Tab di modul Investment.', value: 'Trending' },
   'console.inv_title': { label: 'Judul panel investasi', type: 'text', max: 24, help: 'Judul besar di modul Investment.', value: 'Investment' },
   'console.news_tab':   { label: 'Tab berita',        type: 'text', max: 20, help: 'Tab di modul Research.', value: 'Trending' },

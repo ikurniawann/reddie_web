@@ -779,6 +779,140 @@
         }).catch(function (err) { meetMsg(err.message, true); });
     }
 
+    // ── Panel Automation: peta koneksi + workflow ────────────────────
+    // Peta digambar sebagai SVG hub-and-spoke. Garis yang hidup diberi
+    // animasi aliran; yang mati diam dan pudar — jadi keadaan sistem
+    // terbaca sekilas tanpa membaca satu kata pun.
+    function petaSVG(conns) {
+        var W = 300, H = 250, cx = W / 2, cy = H / 2, R = 96;
+        var n = conns.length || 1;
+        var titik = conns.map(function (c, i) {
+            var a = (Math.PI * 2 * i) / n - Math.PI / 2;
+            return { c: c, x: cx + Math.cos(a) * R, y: cy + Math.sin(a) * R };
+        });
+        var garis = titik.map(function (t) {
+            var hidup = t.c.up, sebagian = t.c.partial;
+            var warna = hidup ? '#16a34a' : sebagian ? '#ca8a04' : '#d1d5db';
+            return '<line x1="' + cx + '" y1="' + cy + '" x2="' + t.x.toFixed(1) + '" y2="' + t.y.toFixed(1) + '" ' +
+                   'stroke="' + warna + '" stroke-width="' + (hidup ? 1.6 : 1) + '" ' +
+                   'stroke-dasharray="' + (hidup ? '4 4' : '2 4') + '" ' +
+                   'opacity="' + (hidup ? 0.9 : 0.45) + '">' +
+                   (hidup ? '<animate attributeName="stroke-dashoffset" from="16" to="0" dur="1.1s" repeatCount="indefinite"/>' : '') +
+                   '</line>';
+        }).join('');
+        var simpul = titik.map(function (t) {
+            var hidup = t.c.up, sebagian = t.c.partial;
+            var warna = hidup ? '#16a34a' : sebagian ? '#ca8a04' : '#9ca3af';
+            var pendek = t.c.label.length > 13 ? t.c.label.slice(0, 12) + '…' : t.c.label;
+            return '<g>' +
+              '<circle cx="' + t.x.toFixed(1) + '" cy="' + t.y.toFixed(1) + '" r="7" fill="#fff" stroke="' + warna + '" stroke-width="2"/>' +
+              (hidup ? '<circle cx="' + t.x.toFixed(1) + '" cy="' + t.y.toFixed(1) + '" r="7" fill="none" stroke="' + warna + '" stroke-width="2" opacity="0.5">' +
+                       '<animate attributeName="r" from="7" to="14" dur="1.8s" repeatCount="indefinite"/>' +
+                       '<animate attributeName="opacity" from="0.5" to="0" dur="1.8s" repeatCount="indefinite"/></circle>' : '') +
+              '<text x="' + t.x.toFixed(1) + '" y="' + (t.y + (t.y < cy ? -13 : 20)).toFixed(1) + '" ' +
+                'text-anchor="middle" font-size="8.5" font-weight="700" fill="#4b5563">' + esc(pendek) + '</text>' +
+            '</g>';
+        }).join('');
+        return '<svg viewBox="0 0 ' + W + ' ' + H + '" style="width:100%;height:auto;display:block;">' +
+          garis + simpul +
+          '<circle cx="' + cx + '" cy="' + cy + '" r="24" fill="#ff3333"/>' +
+          '<text x="' + cx + '" y="' + (cy + 3.5) + '" text-anchor="middle" font-size="10" font-weight="800" fill="#fff">REDDIE</text>' +
+        '</svg>';
+    }
+
+    function connRow(c) {
+        var warna = c.up ? '#16a34a' : c.partial ? '#ca8a04' : '#9ca3af';
+        var label = c.up ? 'aktif' : c.partial ? 'siap' : 'mati';
+        return '<div style="display:flex;align-items:center;gap:.5rem;padding:.42rem 0;' +
+               'border-top:1px solid rgba(0,0,0,.05);">' +
+               '<span style="width:7px;height:7px;border-radius:50%;background:' + warna + ';flex:0 0 auto;"></span>' +
+               '<div style="flex:1;min-width:0;">' +
+                 '<div style="font-size:.75rem;font-weight:700;color:#111827;">' + esc(c.label) +
+                   ' <span style="font-weight:500;color:#9ca3af;">' + esc(c.detail || '') + '</span></div>' +
+                 '<div style="font-size:.64rem;color:#6b7280;">' + esc(c.note || '') + '</div>' +
+               '</div>' +
+               '<span style="font-size:.6rem;font-weight:700;color:' + warna + ';text-transform:uppercase;flex:0 0 auto;">' +
+                 label + (c.ms ? ' · ' + c.ms + 'ms' : '') + '</span></div>';
+    }
+
+    function wfRow(w) {
+        return '<div style="display:flex;align-items:center;gap:.5rem;padding:.5rem 0;' +
+               'border-top:1px solid rgba(0,0,0,.05);">' +
+               '<div style="flex:1;min-width:0;">' +
+                 '<div style="font-size:.76rem;font-weight:700;color:#111827;">' + esc(w.name) + '</div>' +
+                 '<div style="font-size:.63rem;color:#6b7280;">' +
+                   (w.active ? 'aktif' : 'nonaktif') + (w.nodes ? ' · ' + w.nodes + ' langkah' : '') +
+                   (w.runnable ? '' : ' · ' + esc(w.reason || '')) + '</div>' +
+               '</div>' +
+               (w.runnable && w.active
+                 ? '<button data-runwf="' + esc(w.id) + '" style="flex:0 0 auto;background:#16192a;color:#fff;' +
+                   'border:none;border-radius:8px;padding:.32rem .7rem;font:700 .68rem system-ui;cursor:pointer;">Jalankan</button>'
+                 : '') +
+               '</div>';
+    }
+
+    function loadAutomation() {
+        var box = document.querySelector('[data-autopanel]');
+        if (!box) return Promise.resolve();
+        var h = {};
+        if (state.gToken) h['x-google-token'] = state.gToken;
+        return fetch(API + '/automation', { headers: h, signal: AbortSignal.timeout(20000) })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (d) {
+                if (!d.ok) {
+                    box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">' +
+                        esc(d.error || 'Gagal memeriksa koneksi.') + '</p>';
+                    return;
+                }
+                var conns = d.connections || [], wfs = d.workflows || [];
+                var aktif = conns.filter(function (c) { return c.up; }).length;
+                box.innerHTML =
+                    petaSVG(conns) +
+                    '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
+                      'margin:.4rem 0 .1rem;">KONEKSI · ' + aktif + '/' + conns.length + ' AKTIF</div>' +
+                    conns.map(connRow).join('') +
+                    '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
+                      'margin:1rem 0 .1rem;">WORKFLOW N8N</div>' +
+                    (!d.n8n
+                      ? '<p style="font-size:.72rem;color:#92400e;margin:.4rem 0 0;line-height:1.5;">' +
+                        'API key n8n belum diisi, jadi daftar workflow tidak bisa dibaca. ' +
+                        'Buat di n8n &rarr; Settings &rarr; API, lalu isikan <b>N8N_API_KEY</b> di berkas .env server.</p>'
+                      : wfs.length ? wfs.map(wfRow).join('')
+                        : '<p style="font-size:.72rem;color:#6b7280;margin:.4rem 0 0;">Belum ada workflow di n8n.</p>') +
+                    '<p data-automsg style="font-size:.68rem;color:#6b7280;margin:.6rem 0 0;text-align:center;"></p>';
+            })
+            .catch(function () {
+                box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">Panel automation tidak terjangkau.</p>';
+            });
+    }
+    window.REDDIE_AUTOMATION = loadAutomation;
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-runwf]');
+        if (!b) return;
+        e.preventDefault();
+        var msg = document.querySelector('[data-automsg]');
+        b.disabled = true; b.textContent = 'Menjalankan…';
+        if (msg) { msg.textContent = ''; msg.style.color = '#6b7280'; }
+        fetch(API + '/automation/run', {
+            method: 'POST', headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ id: b.dataset.runwf }),
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; });
+        }).then(function (d) {
+            b.disabled = false; b.textContent = 'Jalankan';
+            if (msg) {
+                msg.textContent = d.ok
+                    ? 'Workflow "' + d.workflow + '" selesai dalam ' + d.ms + ' ms.'
+                    : (d.error || 'Gagal menjalankan.');
+                msg.style.color = d.ok ? '#16a34a' : '#b91c1c';
+            }
+        }).catch(function () {
+            b.disabled = false; b.textContent = 'Jalankan';
+            if (msg) { msg.textContent = 'Gagal menghubungi server.'; msg.style.color = '#b91c1c'; }
+        });
+    });
+
     // ── Panel kripto (Investment) ────────────────────────────────────
     function uang(n) {
         if (n == null) return '—';
@@ -1039,7 +1173,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h6';
+        sc.src = 'style/editor.js?v=20260901-h7';
         document.body.appendChild(sc);
     }
 

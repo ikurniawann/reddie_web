@@ -15,6 +15,8 @@ import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskE
 import { googleStatus } from './google.js';
 import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleTool } from './news.js';
 import { fetchTrending, CryptoError, CRYPTO_TOOL, runCryptoTool } from './crypto.js';
+import { checkConnections, listWorkflows, runWorkflow, n8nReady,
+         AUTOMATION_TOOLS, runAutomationTool, AutomationError } from './automation.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -199,7 +201,8 @@ export function buildApp() {
     const taskCfg = await taskConfig();
     const intg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
     // Tool berita selalu tersedia: tidak butuh kredensial apa pun.
-    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL, ARTICLE_TOOL, CRYPTO_TOOL];
+    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL, ARTICLE_TOOL, CRYPTO_TOOL,
+                   ...(n8nReady() ? AUTOMATION_TOOLS : [])];
     const toolCtxHasGoogle = !!String(req.headers['x-google-token'] || '');
     system += '\n\nKamu bisa mengambil berita terbaru lewat tool get_trending_news. ' +
       'Pakai itu bila ditanya soal berita atau tren, sebutkan sumber dan waktunya, ' +
@@ -268,6 +271,8 @@ export function buildApp() {
           const out = fname === 'get_trending_news' ? await runNewsTool(args, newsDefaults)
                     : fname === 'read_news_article' ? await runArticleTool(args, newsDefaults)
                     : fname === 'get_trending_crypto' ? await runCryptoTool(args)
+                    : (fname === 'list_workflows' || fname === 'run_workflow')
+                        ? await runAutomationTool(fname, args)
                     : await runTaskTool(taskCfg, fname, args, toolCtx);
           if (out && out.ok && MUTATING.includes(fname)) tasksChanged = true;
           convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
@@ -333,6 +338,38 @@ export function buildApp() {
     const t = await updateTask(cfg, req.params.id, { status: req.body?.status, title: req.body?.title });
     res.json({ task: t });
   }));
+
+  // ═══════════════ AUTOMATION ═══════════════
+
+  app.get('/api/automation', async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try {
+      const signedIn = !!String(req.headers['x-google-token'] || '');
+      const [connections, workflows] = await Promise.all([
+        checkConnections({ googleSignedIn: signedIn }),
+        n8nReady() ? listWorkflows().catch(() => []) : Promise.resolve([]),
+      ]);
+      res.set('cache-control', 'no-store');
+      res.json({ ok: true, connections, workflows, n8n: n8nReady() });
+    } catch (e) {
+      console.error('[automation]', e);
+      res.json({ ok: false, unavailable: true, connections: [], workflows: [],
+                 error: 'Gagal memeriksa koneksi.' });
+    }
+  });
+
+  app.post('/api/automation/run', async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try {
+      res.json(await runWorkflow(req.body?.id, { dari: 'panel' }));
+    } catch (e) {
+      const status = e instanceof AutomationError ? e.status : 500;
+      res.status(status < 500 ? status : 200).json({
+        ok: false, error: e instanceof AutomationError ? e.message : 'Gagal menjalankan workflow.' });
+    }
+  });
 
   // ═══════════════ KRIPTO TRENDING ═══════════════
 
