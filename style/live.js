@@ -872,7 +872,26 @@
         '</svg>';
     }
 
-    function tampilGrafikChat(conns) {
+    function wfKartuBesar(w) {
+        var bisa = w.runnable && w.active;
+        return '<div style="display:flex;align-items:center;gap:.7rem;background:rgba(255,255,255,.6);' +
+               'border:1px solid rgba(0,0,0,.06);border-radius:12px;padding:.65rem .8rem;margin-bottom:.5rem;">' +
+                 '<i class="fa-solid fa-bolt" style="color:' + (bisa ? '#ff3333' : '#9ca3af') + ';font-size:.9rem;"></i>' +
+                 '<div style="flex:1;min-width:0;text-align:left;">' +
+                   '<div style="font-size:.82rem;font-weight:700;color:#111827;">' + esc(w.name) + '</div>' +
+                   '<div style="font-size:.68rem;color:#6b7280;">' +
+                     (w.active ? 'aktif' : 'nonaktif') + (w.nodes ? ' · ' + w.nodes + ' langkah' : '') +
+                     (w.runnable ? '' : ' · ' + esc(w.reason || '')) + '</div>' +
+                 '</div>' +
+                 (bisa
+                   ? '<button data-runwf="' + esc(w.id) + '" style="flex:0 0 auto;background:#16192a;color:#fff;' +
+                     'border:none;border-radius:9px;padding:.45rem .95rem;font:800 .76rem system-ui;cursor:pointer;">' +
+                     'Jalankan</button>'
+                   : '') +
+               '</div>';
+    }
+
+    function tampilGrafikChat(conns, wfs, n8nSiap) {
         var box = document.querySelector('[data-chatvisual]');
         if (!box) return;
         if (!conns || !conns.length) { sembunyikanGrafikChat(); return; }
@@ -881,9 +900,26 @@
         box.classList.add('glass');
         var w = document.getElementById('chatWelcomeState');
         if (w) w.classList.add('graph-focus');
+
+        var bagianWf = '';
+        if (n8nSiap && wfs && wfs.length) {
+            bagianWf =
+                '<div style="border-top:1px solid rgba(0,0,0,.07);margin-top:.7rem;padding-top:.8rem;">' +
+                  '<div style="font-size:.68rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
+                    'margin-bottom:.5rem;text-align:left;">OTOMASI SIAP DIJALANKAN</div>' +
+                  wfs.map(wfKartuBesar).join('') +
+                '</div>';
+        } else if (n8nSiap) {
+            bagianWf = '<p style="font-size:.72rem;color:#6b7280;margin:.7rem 0 0;">' +
+                       'Belum ada workflow di n8n.</p>';
+        }
+
         box.innerHTML = petaBesar(conns) +
             '<p style="font-size:.72rem;color:#6b7280;text-align:center;margin:.2rem 0 0;">' +
-              aktif + ' dari ' + conns.length + ' sistem aktif · diperiksa langsung saat panel dibuka</p>';
+              aktif + ' dari ' + conns.length + ' sistem aktif · diperiksa langsung saat panel dibuka</p>' +
+            bagianWf +
+            '<p data-automsg style="font-size:.75rem;color:#6b7280;margin:.6rem 0 0;text-align:center;' +
+              'white-space:pre-wrap;line-height:1.55;"></p>';
     }
 
     function sembunyikanGrafikChat() {
@@ -940,7 +976,7 @@
                 }
                 var conns = d.connections || [], wfs = d.workflows || [];
                 var aktif = conns.filter(function (c) { return c.up; }).length;
-                tampilGrafikChat(conns);      // versi besar di area chat
+                tampilGrafikChat(conns, wfs, d.n8n);   // versi besar di area chat
                 box.innerHTML =
                     petaSVG(conns) +
                     '<div style="font-size:.7rem;font-weight:800;letter-spacing:.09em;color:#6b7280;' +
@@ -962,13 +998,22 @@
     }
     window.REDDIE_AUTOMATION = loadAutomation;
 
+    // Pesan hasil ditulis ke SEMUA elemen [data-automsg] — panel kaca di area
+    // chat dan kolom tengah bisa tampil bersamaan, dan hanya memperbarui yang
+    // pertama membuat salah satunya menampilkan keadaan basi.
+    function autoMsg(teks, warna) {
+        [].forEach.call(document.querySelectorAll('[data-automsg]'), function (el) {
+            el.textContent = teks || '';
+            el.style.color = warna || '#6b7280';
+        });
+    }
+
     document.addEventListener('click', function (e) {
         var b = e.target.closest('[data-runwf]');
         if (!b) return;
         e.preventDefault();
-        var msg = document.querySelector('[data-automsg]');
         b.disabled = true; b.textContent = 'Menjalankan…';
-        if (msg) { msg.textContent = ''; msg.style.color = '#6b7280'; }
+        autoMsg('Menjalankan otomasi…');
         fetch(API + '/automation/run', {
             method: 'POST', headers: { 'content-type': 'application/json' },
             body: JSON.stringify({ id: b.dataset.runwf }),
@@ -976,15 +1021,15 @@
             return r.json().catch(function () { return {}; });
         }).then(function (d) {
             b.disabled = false; b.textContent = 'Jalankan';
-            if (msg) {
-                msg.textContent = d.ok
-                    ? 'Workflow "' + d.workflow + '" selesai dalam ' + d.ms + ' ms.'
-                    : (d.error || 'Gagal menjalankan.');
-                msg.style.color = d.ok ? '#16a34a' : '#b91c1c';
-            }
+            if (!d.ok) { autoMsg(d.error || 'Gagal menjalankan.', '#b91c1c'); return; }
+            // Workflow yang dirancang baik mengembalikan kalimat siap baca;
+            // itu yang ditampilkan, bukan sekadar 'selesai dalam sekian ms'.
+            var isi = d.hasil && typeof d.hasil === 'object' ? (d.hasil.pesan || d.hasil.message) : d.hasil;
+            autoMsg((isi ? String(isi) + '\n\n' : '') +
+                    'Selesai dalam ' + d.ms + ' ms.', '#16a34a');
         }).catch(function () {
             b.disabled = false; b.textContent = 'Jalankan';
-            if (msg) { msg.textContent = 'Gagal menghubungi server.'; msg.style.color = '#b91c1c'; }
+            autoMsg('Gagal menghubungi server.', '#b91c1c');
         });
     });
 
@@ -1248,7 +1293,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h9';
+        sc.src = 'style/editor.js?v=20260901-j1';
         document.body.appendChild(sc);
     }
 
