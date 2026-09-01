@@ -751,7 +751,7 @@ export function buildApp() {
 
   // CRUD generik untuk tabel konten
   const tables = {
-    agents: ['slug','name','image','description','system_prompt','sort','show_in_dropdown','show_in_carousel','enabled'],
+    agents: ['slug','name','image','video','welcome_title','welcome_subtitle','description','system_prompt','sort','show_in_dropdown','show_in_carousel','enabled'],
     skills: ['slug','title','subtitle','description','icon','color','button_label','sort','enabled'],
     models: null, // ditangani khusus (nama tabel beda)
   };

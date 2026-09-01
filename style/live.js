@@ -18,6 +18,13 @@
     // mengundangnya.
     var agentik = { ws: null, kode: null, izin: {}, keHermes: false, dijemput: false };
 
+    // Video bawaan halaman, diingat sekali sebelum ada penggantian. Agent
+    // yang belum punya rekaman sendiri kembali ke sini — kotak video kosong
+    // terlihat seperti halaman rusak, bukan seperti pilihan desain.
+    // Diletakkan di atas karena pasangVideo dipanggil dari hidrasi, yang
+    // jalan lebih dulu daripada blok video di bagian bawah berkas.
+    var videoBawaan = null;
+
     var state = {
         ready: false,          // true bila /api/content berhasil dimuat
         models: [],
@@ -263,8 +270,33 @@
         var dropdownAgents = (d.agents || []).filter(function (a) { return a.show_in_dropdown; });
         if (dd && dropdownAgents.length) {
             dd.innerHTML = dropdownAgents.map(function (a, i) {
-                return '<div class="agent-opt' + (i === 0 ? ' active' : '') + '" data-agent="' + esc(a.slug) + '">' + esc(a.name) + '</div>';
+                return '<div class="agent-opt' + (i === 0 ? ' active' : '') +
+                       '" data-agent="' + esc(a.slug) + '"' +
+                       (a.video ? ' data-video="' + esc(a.video) + '"' : '') +
+                       '>' + esc(a.name) + '</div>';
             }).join('');
+            // Sapaan tiap agent disimpan untuk dibaca script.js saat pilihan
+            // diklik. Diletakkan sebelum pengikatan ulang supaya klik pertama
+            // pun sudah menemukannya.
+            var sapaan = {};
+            dropdownAgents.forEach(function (a) {
+                sapaan[a.slug] = { title: a.welcome_title || '', subtitle: a.welcome_subtitle || '' };
+            });
+            window.__reddieAgentWelcome = sapaan;
+            window.__reddieWelcomeDefault = {
+                title: (d.settings && d.settings.welcome && d.settings.welcome.title) || '',
+                subtitle: (d.settings && d.settings.welcome && d.settings.welcome.subtitle) || '',
+            };
+
+            // WAJIB: innerHTML di atas membuang elemen lama beserta seluruh
+            // listener yang menempel padanya. Tanpa pengikatan ulang, memilih
+            // agent tidak melakukan apa pun — dropdown tidak menutup, label
+            // tidak berubah, dan sapaannya tetap milik agent sebelumnya.
+            if (window.bindAgentSelectorDropdown) window.bindAgentSelectorDropdown();
+
+            // Agent pertama sudah aktif sejak halaman dibuka, jadi videonya
+            // dipasang sekarang — bukan menunggu dropdown disentuh.
+            pasangVideo(dropdownAgents[0].video);
             var btn = document.getElementById('activeAgentBtn');
             if (btn) {
                 var dot = btn.querySelector('.status-dot');
@@ -968,6 +1000,32 @@
         ws.onerror = function () { agentikStatus('Koneksi gagal. Coba lagi sebentar.', '#b91c1c'); };
     }
 
+    // "assets/x.mp4?v=9" dan "assets/x.mp4" -> jalur yang sama.
+    function jalur(u) {
+        try { return new URL(u || '', location.href).pathname; }
+        catch (e) { return String(u || ''); }
+    }
+
+    function pasangVideo(letak) {
+        var v = document.querySelector('.chat-welcome-video-bg');
+        if (!v) return;
+        if (videoBawaan === null) videoBawaan = v.getAttribute('src') || '';
+        var tujuan = String(letak || '').trim() || videoBawaan;
+        if (!tujuan) return;
+        // Dibandingkan lewat jalurnya saja. Atribut src di halaman membawa
+        // embel versi (?v=...) yang tidak ada di nilai CMS, jadi perbandingan
+        // teks mentah akan selalu menyatakan "berbeda" — video yang sama
+        // dimuat ulang dan berkedip tiap kali agent dipilih, termasuk sekali
+        // di setiap halaman dibuka.
+        if (jalur(v.getAttribute('src')) === jalur(tujuan)) return;
+        v.setAttribute('src', tujuan);
+        v.load();
+        // Sebagian browser menolak autoplay setelah src diganti; penolakan
+        // itu wajar dan tidak perlu meledak ke konsol.
+        var p = v.play();
+        if (p && p.catch) p.catch(function () {});
+    }
+
     function renderAgentik() {
         var box = document.querySelector('[data-agenticpanel]');
         if (!box) return;
@@ -1563,7 +1621,10 @@
     // ── Lacak pilihan agent & model dari UI yang sudah ada ───────────
     document.addEventListener('click', function (e) {
         var opt = e.target.closest('.agent-opt');
-        if (opt && opt.dataset.agent) window.__reddieAgent = opt.dataset.agent.toLowerCase();
+        if (opt && opt.dataset.agent) {
+            window.__reddieAgent = opt.dataset.agent.toLowerCase();
+            pasangVideo(opt.dataset.video);
+        }
         var mo = e.target.closest('.model-option');
         if (mo && mo.dataset.modelId) window.__reddieModelId = mo.dataset.modelId;
     });

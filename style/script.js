@@ -205,11 +205,26 @@ function setupDashboardDemo() {
         });
     }
     
+    // Penanda ini HARUS berada di atas pemanggilan di bawah. Dengan `let`
+    // di dekat definisi fungsinya, panggilan pertama jatuh ke temporal dead
+    // zone dan melempar — seluruh pengikatan dropdown mati diam-diam, dan
+    // memilih agent tidak melakukan apa pun.
+    let dropdownBoundOnce = false;
+
     // Initial binding of chips & buttons on load
     bindChipClickListeners();
     bindInteractiveStatsFeatures();
     bindAgentSelectorDropdown();
     
+    // Dipanggil ulang oleh live.js setelah dropdown diisi dari CMS.
+    //
+    // Isi dropdown DIGANTI seluruhnya saat hidrasi, sehingga listener yang
+    // menempel pada elemen lama ikut musnah bersama elemennya — memilih agent
+    // lalu tidak melakukan apa pun sama sekali. Karena itu pengikatan harus
+    // bisa diulang, dan bagian yang hanya boleh sekali (tombol + penutup
+    // dropdown) dijaga penanda di bawah.
+    window.bindAgentSelectorDropdown = bindAgentSelectorDropdown;
+
     function bindAgentSelectorDropdown() {
         const activeAgentBtn = document.getElementById('activeAgentBtn');
         const agentOpts = document.querySelectorAll('.agent-opt');
@@ -217,23 +232,30 @@ function setupDashboardDemo() {
 
         if (!activeAgentBtn) return;
 
-        // Toggle dropdown open/closed on tap (mobile-friendly)
-        activeAgentBtn.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (agentDropdown) agentDropdown.classList.toggle('dropdown-open');
-        });
+        if (!dropdownBoundOnce) {
+            dropdownBoundOnce = true;
+            // Toggle dropdown open/closed on tap (mobile-friendly)
+            activeAgentBtn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                if (agentDropdown) agentDropdown.classList.toggle('dropdown-open');
+            });
 
-        // Close dropdown when clicking/tapping anywhere outside
-        document.addEventListener('click', () => {
-            if (agentDropdown) agentDropdown.classList.remove('dropdown-open');
-        });
+            // Close dropdown when clicking/tapping anywhere outside
+            document.addEventListener('click', () => {
+                if (agentDropdown) agentDropdown.classList.remove('dropdown-open');
+            });
+        }
 
         agentOpts.forEach(opt => {
             opt.addEventListener('click', () => {
                 // Close dropdown on selection
                 if (agentDropdown) agentDropdown.classList.remove('dropdown-open');
 
-                const agentName = opt.getAttribute('data-agent');
+                // data-agent berisi SLUG (kunci teknis). Yang boleh dilihat
+                // pengunjung adalah nama tampilannya — tanpa pembedaan ini
+                // layar menyapa "Welcome, titanie!" dengan huruf kecil.
+                const agentSlug = opt.getAttribute('data-agent');
+                const agentName = (opt.textContent || agentSlug || '').trim();
 
                 // 1. Update dropdown active visual states
                 agentOpts.forEach(el => el.classList.remove('active'));
@@ -251,13 +273,14 @@ function setupDashboardDemo() {
                 const welcomeTitle = chatWelcomeState.querySelector('.chat-welcome-title');
                 const welcomeSubtitle = chatWelcomeState.querySelector('.chat-welcome-subtitle');
                 if (welcomeTitle && welcomeSubtitle) {
-                    if (agentName === 'Reddie') {
-                        welcomeTitle.textContent = "Welcome, Mr. Stark!";
-                        welcomeSubtitle.textContent = "How can I help you today?";
-                    } else {
-                        welcomeTitle.textContent = `Welcome, ${agentName}!`;
-                        welcomeSubtitle.textContent = `I am loaded and ready. How can I help you today?`;
-                    }
+                    // Sapaan milik agent, diisi live.js dari CMS. Agent yang
+                    // belum punya sapaan sendiri jatuh ke sapaan umum halaman,
+                    // bukan ke kalimat yang mengarang namanya.
+                    const sapaan = (window.__reddieAgentWelcome || {})[agentSlug] || {};
+                    const umum = window.__reddieWelcomeDefault || {};
+                    welcomeTitle.textContent = sapaan.title || umum.title || `Welcome, ${agentName}!`;
+                    welcomeSubtitle.textContent = sapaan.subtitle || umum.subtitle
+                        || 'I am loaded and ready. How can I help you today?';
                 }
                 
                 // 5. Append system notice in chat log
