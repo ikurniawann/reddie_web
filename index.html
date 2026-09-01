@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>REDDIE - The AI Agent by WIT</title>
+    <title data-cms="site.title">REDDIE - The AI Agent by WIT</title>
     <!-- Google Fonts: Montserrat -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -11,7 +11,7 @@
     <!-- Font Awesome for clean SaaS UI icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="style/style.css?v=20260826-2">
+    <link rel="stylesheet" href="style/style.css?v=20260901-f1">
 </head>
 <body>
 
@@ -19,17 +19,17 @@
     <header class="site-header">
         <nav class="nav-container">
             <div class="nav-left">
-                <a href="#section-home" class="nav-link nav-home active" data-target="home">HOME</a>
-                <a href="#section-try" class="nav-link nav-try" data-target="try">TRY</a>
+                <a href="#section-home" class="nav-link nav-home active" data-target="home" data-cms="nav.home">HOME</a>
+                <a href="#section-try" class="nav-link nav-try" data-target="try" data-cms="nav.try">TRY</a>
             </div>
             
             <div class="nav-center">
-                <div class="brand-text">The AI Agent by <span class="brand-wit">WIT</span><span class="brand-dot">.</span></div>
+                <div class="brand-text"><span data-cms="brand.prefix">The AI Agent by </span><span class="brand-wit" data-cms="brand.name">WIT</span><span class="brand-dot">.</span></div>
             </div>
             
             <div class="nav-right">
-                <a href="#section-about" class="nav-link nav-about" data-target="about">ABOUT</a>
-                <a href="#section-contact" class="nav-link nav-contact" data-target="contact">CONTACT</a>
+                <a href="#section-about" class="nav-link nav-about" data-target="about" data-cms="nav.about">ABOUT</a>
+                <a href="#section-contact" class="nav-link nav-contact" data-target="contact" data-cms="nav.contact">CONTACT</a>
             </div>
         </nav>
     </header>
@@ -41,7 +41,7 @@
         <section class="page-section section-home active" id="section-home">
             <!-- Back Layer: Huge Logo REDDIE -->
             <div class="brand-title-huge-container">
-                <h1 class="brand-title-huge">REDDIE<span class="logo-reg">®</span></h1>
+                <h1 class="brand-title-huge"><span data-cms="hero.title">REDDIE</span><span class="logo-reg">®</span></h1>
             </div>
             
             <!-- Middle Layer: Reddie Character (Stand-alone sandwich layer) -->
@@ -49,7 +49,7 @@
             
             <!-- Front Layer: Subtitle "The Agent Make IT Work" -->
             <div class="brand-subtitle-container">
-                <h2 class="brand-subtitle">The Agent Make IT Work</h2>
+                <h2 class="brand-subtitle" data-cms="hero.subtitle">The Agent Make IT Work</h2>
             </div>
         </section>
 
@@ -65,14 +65,14 @@
                                 <img src="assets/Reddie Logo_Logogram Red.webp" alt="Reddie Logo" class="db-logo-img">
                             </div>
                             <div class="db-tab-switcher">
-                                <span class="db-tab">Prompt</span>
-                                <span class="db-tab active">Agent</span>
+                                <span class="db-tab" data-cms="console.tab_prompt">Prompt</span>
+                                <span class="db-tab active" data-cms="console.tab_agent">Agent</span>
                             </div>
                         </div>
                         <div class="db-header-center">
                             <div class="db-search-bar">
                                 <span class="search-icon"><i class="fa-solid fa-magnifying-glass"></i></span>
-                                <input type="text" id="dbSearchInput" placeholder="Search conversations, customers, or tickets...">
+                                <input type="text" id="dbSearchInput" placeholder="Search conversations, customers, or tickets..." data-cms="console.search_placeholder" data-cms-attr="placeholder">
                                 <span class="settings-gear"><i class="fa-solid fa-sliders"></i></span>
                             </div>
                         </div>
@@ -99,29 +99,29 @@
                     <div class="db-body">
                         <aside class="db-sidebar">
                             <div class="sidebar-menu">
-                                <div class="menu-item active">
-                                    <span class="menu-icon"><i class="fa-solid fa-comments"></i></span> Chat & Discussion
+                                <div class="menu-item active" data-key="Chat &amp; Discussion">
+                                    <span class="menu-icon"><i class="fa-solid fa-comments"></i></span> <span data-cms="console.menu_chat">Chat &amp; Discussion</span>
                                 </div>
-                                <div class="menu-item">
-                                    <span class="menu-icon"><i class="fa-solid fa-tower-broadcast"></i></span> Real-Time Discussion
+                                <div class="menu-item" data-key="Real-Time Discussion">
+                                    <span class="menu-icon"><i class="fa-solid fa-tower-broadcast"></i></span> <span data-cms="console.menu_realtime">Real-Time Discussion</span>
                                 </div>
-                                <div class="menu-item">
-                                    <span class="menu-icon"><i class="fa-solid fa-calendar-check"></i></span> Task & Scheduling
+                                <div class="menu-item" data-key="Task &amp; Scheduling">
+                                    <span class="menu-icon"><i class="fa-solid fa-calendar-check"></i></span> <span data-cms="console.menu_task">Task &amp; Scheduling</span>
                                 </div>
-                                <div class="menu-item">
-                                    <span class="menu-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span> Analyze
+                                <div class="menu-item" data-key="Analyze">
+                                    <span class="menu-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span> <span data-cms="console.menu_analyze">Analyze</span>
                                 </div>
-                                <div class="menu-item">
-                                    <span class="menu-icon"><i class="fa-solid fa-book-open"></i></span> Research
+                                <div class="menu-item" data-key="Research">
+                                    <span class="menu-icon"><i class="fa-solid fa-book-open"></i></span> <span data-cms="console.menu_research">Research</span>
                                 </div>
-                                <div class="menu-item">
-                                    <span class="menu-icon"><i class="fa-solid fa-gears"></i></span> Automation
+                                <div class="menu-item" data-key="Automation">
+                                    <span class="menu-icon"><i class="fa-solid fa-gears"></i></span> <span data-cms="console.menu_automation">Automation</span>
                                 </div>
-                                <div class="menu-item">
-                                    <span class="menu-icon"><i class="fa-solid fa-network-wired"></i></span> Connectivity
+                                <div class="menu-item" data-key="Connectivity">
+                                    <span class="menu-icon"><i class="fa-solid fa-network-wired"></i></span> <span data-cms="console.menu_connectivity">Connectivity</span>
                                 </div>
-                                <div class="menu-item menu-more">
-                                    <span class="menu-icon"><i class="fa-solid fa-ellipsis"></i></span> <em>And many more..</em>
+                                <div class="menu-item menu-more" data-key="And many more..">
+                                    <span class="menu-icon"><i class="fa-solid fa-ellipsis"></i></span> <em data-cms="console.menu_more">And many more..</em>
                                 </div>
                             </div>
                             
@@ -131,33 +131,33 @@
                                     <i class="fa-solid fa-circle-user"></i>
                                 </div>
                                 <div class="profile-info">
-                                    <span class="profile-name" id="sidebarProfileName">Guest User</span>
-                                    <span class="profile-status" id="sidebarProfileStatus">Click to Sign In</span>
+                                    <span class="profile-name" id="sidebarProfileName" data-cms="console.profile_name">Guest User</span>
+                                    <span class="profile-status" id="sidebarProfileStatus" data-cms="console.profile_status">Click to Sign In</span>
                                 </div>
                                 <span class="profile-more-icon"><i class="fa-solid fa-chevron-up"></i></span>
                             </div>
                             
-                            <div class="sidebar-footer">Built v0.12</div>
+                            <div class="sidebar-footer" data-cms="console.sidebar_footer">Built v0.12</div>
                         </aside>
                         
                         <!-- Column 2: Stats Column -->
                         <div class="db-stats-col">
                             <div class="stats-tabs">
-                                <span class="stats-tab active">AI Skills Sockets</span>
+                                <span class="stats-tab active" data-cms="console.skills_tab">AI Skills Sockets</span>
                                 <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                             </div>
                             <div class="stats-scroll-content">
                                 <div class="billing-card" style="gap: 1rem;">
                                     <div class="billing-header">
-                                        <h3>Active Sockets</h3>
+                                        <h3 data-cms="console.skills_title">Active Sockets</h3>
                                         <span class="edit-icon"><i class="fa-solid fa-wand-magic-sparkles" style="color: #ff3333;"></i></span>
                                     </div>
                                     
-                                    <p style="font-size: 0.8rem; color: #4b5563; margin-top: -0.8rem; margin-bottom: 0.4rem; line-height: 1.45;">
+                                    <p style="font-size: 0.8rem; color: #4b5563; margin-top: -0.8rem; margin-bottom: 0.4rem; line-height: 1.45;" data-cms="console.skills_intro">
                                         Select an active socket below to execute custom data transformations directly on the active discussion.
                                     </p>
 
-                                    <div style="display: flex; flex-direction: column; gap: 1rem;">
+                                    <div style="display: flex; flex-direction: column; gap: 1rem;" data-cms-skills>
                                         <!-- Skill 1: Generate PDF -->
                                         <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
                                             <div style="display: flex; align-items: center; gap: 8px;">
@@ -205,15 +205,15 @@
                         <div class="db-chat-col">
                             <div class="chat-viewport" id="chatViewport">
                                 <div class="chat-welcome-state" id="chatWelcomeState">
-                                    <video src="assets/Reddie-Head-Video.mp4?v=20260826-2" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
+                                    <video src="assets/Reddie-Head-Video.mp4?v=20260901-f1" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
                                     
                                     <div class="chat-welcome-content">
                                         <div class="chat-welcome-header">
                                             <div class="badge-protected">
-                                                <span class="check-icon"><i class="fa-solid fa-shield-halved"></i></span> Chat is Protected
+                                                <span class="check-icon"><i class="fa-solid fa-shield-halved"></i></span> <span data-cms="welcome.badge">Chat is Protected</span>
                                             </div>
-                                            <h2 class="chat-welcome-title">Welcome, Mr. Stark!</h2>
-                                            <p class="chat-welcome-subtitle">How can I help you today?</p>
+                                            <h2 class="chat-welcome-title" data-cms="welcome.title">Welcome, Mr. Stark!</h2>
+                                            <p class="chat-welcome-subtitle" data-cms="welcome.subtitle">How can I help you today?</p>
                                         </div>
                                         
                                         <div class="chat-welcome-footer-chips">
@@ -234,12 +234,12 @@
                             
                             <footer class="chat-footer">
                                 <div class="chat-options-bar">
-                                    <span class="opt-link" id="optAttach"><i class="fa-solid fa-paperclip animate-icon"></i> Attach</span>
-                                    <span class="opt-link" id="optOptions"><i class="fa-solid fa-sliders animate-icon"></i> Options</span>
-                                    <span class="opt-link" id="optModel"><i class="fa-solid fa-cube animate-icon"></i> Model</span>
+                                    <span class="opt-link" id="optAttach"><i class="fa-solid fa-paperclip animate-icon"></i> <span data-cms="console.opt_attach">Attach</span></span>
+                                    <span class="opt-link" id="optOptions"><i class="fa-solid fa-sliders animate-icon"></i> <span data-cms="console.opt_options">Options</span></span>
+                                    <span class="opt-link" id="optModel"><i class="fa-solid fa-cube animate-icon"></i> <span data-cms="console.opt_model">Model</span></span>
                                 </div>
                                 <div class="chat-input-bar">
-                                    <input type="text" id="chatInput" placeholder="Ask AI to draft a reply or summarize the issue...">
+                                    <input type="text" id="chatInput" placeholder="Ask AI to draft a reply or summarize the issue..." data-cms="console.input_placeholder" data-cms-attr="placeholder">
                                     <span class="voice-btn"><i class="fa-solid fa-microphone"></i></span>
                                     <button class="send-btn" id="sendBtn"><i class="fa-solid fa-arrow-up"></i></button>
                                 </div>
@@ -256,10 +256,10 @@
                 <!-- Left Column (Dark, description text and metadata info) -->
                 <div class="about-split-left">
                     <div class="about-bg-blur-element"></div>
-                    <h1 class="about-title-left">AI AGENT</h1>
+                    <h1 class="about-title-left" data-cms="about.title_left">AI AGENT</h1>
                     
                     <div class="about-desc-box">
-                        <span class="about-label">ABOUT</span>
+                        <span class="about-label" data-cms="about.label">ABOUT</span>
                         <p class="about-split-desc" id="aboutDescText" style="transition: opacity 0.25s ease-in-out;">
                             Reddie is the signature AI Agent developed by <strong>WIT.ID</strong>. Engineered to be the ultimate digital companion, Reddie operates as an autonomous force to streamline IT operations, automate complex workflows, and deliver comprehensive 360° technology solutions.
                         </p>
@@ -267,16 +267,16 @@
                     
                     <div class="about-split-footer">
                         <div class="footer-col-left">
-                            <span class="small-label">CLICK AND</span>
-                            <a href="#section-try" class="footer-link">EXPLORE WORKSPACE ↗</a>
+                            <span class="small-label" data-cms="about.cta_small">CLICK AND</span>
+                            <a href="#section-try" class="footer-link" data-cms="about.footer_left">EXPLORE WORKSPACE ↗</a>
                         </div>
                         <div class="footer-col-center">
-                            <a href="https://instagram.com" target="_blank" class="footer-social-link">• INSTAGRAM</a>
-                            <a href="https://telegram.org" target="_blank" class="footer-social-link">• TELEGRAM</a>
+                            <a href="https://instagram.com" target="_blank" class="footer-social-link" data-cms="socials.instagram_label" data-cms-href="socials.instagram">• INSTAGRAM</a>
+                            <a href="https://telegram.org" target="_blank" class="footer-social-link" data-cms="socials.telegram_label" data-cms-href="socials.telegram">• TELEGRAM</a>
                         </div>
                         <div class="footer-col-right">
-                            <span class="footer-meta">DEVELOPED BY WIT.ID</span>
-                            <span class="footer-meta">JAKARTA, INDONESIA</span>
+                            <span class="footer-meta" data-cms="about.meta_1">DEVELOPED BY WIT.ID</span>
+                            <span class="footer-meta" data-cms="about.meta_2">JAKARTA, INDONESIA</span>
                         </div>
                     </div>
                 </div>
@@ -297,33 +297,33 @@
         <!-- CONTACT SECTION -->
         <section class="page-section section-contact" id="section-contact">
             <div class="glass-card contact-card">
-                <h2 class="section-title">GET IN TOUCH</h2>
+                <h2 class="section-title" data-cms="contact.title">GET IN TOUCH</h2>
                 <div class="card-line"></div>
-                <p class="contact-subtitle">Let's build the future of AI automation together.</p>
+                <p class="contact-subtitle" data-cms="contact.subtitle">Let's build the future of AI automation together.</p>
                 
                 <form class="contact-form" id="contactForm">
                     <div class="form-group">
-                        <label for="name">Name</label>
-                        <input type="text" id="name" required placeholder="Enter your name">
+                        <label for="name" data-cms="contact.label_name">Name</label>
+                        <input type="text" id="name" required placeholder="Enter your name" data-cms="contact.ph_name" data-cms-attr="placeholder">
                     </div>
                     <div class="form-group">
-                        <label for="email">Email</label>
-                        <input type="email" id="email" required placeholder="Enter your email address">
+                        <label for="email" data-cms="contact.label_email">Email</label>
+                        <input type="email" id="email" required placeholder="Enter your email address" data-cms="contact.ph_email" data-cms-attr="placeholder">
                     </div>
                     <div class="form-group">
-                        <label for="message">Message</label>
-                        <textarea id="message" rows="4" required placeholder="Tell us about your project or inquiry"></textarea>
+                        <label for="message" data-cms="contact.label_message">Message</label>
+                        <textarea id="message" rows="4" required placeholder="Tell us about your project or inquiry" data-cms="contact.ph_message" data-cms-attr="placeholder"></textarea>
                     </div>
                     <button type="submit" class="submit-btn">
-                        <span>SEND MESSAGE</span>
+                        <span data-cms="contact.submit">SEND MESSAGE</span>
                         <div class="btn-glow"></div>
                     </button>
                 </form>
                 
                 <div class="form-success-message" id="formSuccessMessage">
                     <div class="success-icon">✓</div>
-                    <h3>Message Sent Successfully!</h3>
-                    <p>Thank you for reaching out. The Reddie team will get back to you shortly.</p>
+                    <h3 data-cms="contact.success_title">Message Sent Successfully!</h3>
+                    <p data-cms="contact.success_body">Thank you for reaching out. The Reddie team will get back to you shortly.</p>
                 </div>
             </div>
         </section>
@@ -334,19 +334,19 @@
     <nav class="mobile-bottom-nav" id="mobileBottomNav">
         <a href="#section-home" class="mobile-nav-item active" data-target="home">
             <i class="fa-solid fa-house"></i>
-            <span>HOME</span>
+            <span data-cms="nav.home">HOME</span>
         </a>
         <a href="#section-try" class="mobile-nav-item" data-target="try">
             <i class="fa-solid fa-robot"></i>
-            <span>TRY</span>
+            <span data-cms="nav.try">TRY</span>
         </a>
         <a href="#section-about" class="mobile-nav-item" data-target="about">
             <i class="fa-solid fa-circle-info"></i>
-            <span>ABOUT</span>
+            <span data-cms="nav.about">ABOUT</span>
         </a>
         <a href="#section-contact" class="mobile-nav-item" data-target="contact">
             <i class="fa-solid fa-envelope"></i>
-            <span>CONTACT</span>
+            <span data-cms="nav.contact">CONTACT</span>
         </a>
     </nav>
 
@@ -357,35 +357,35 @@
             <div class="login-modal-logo">
                 <img src="assets/Reddie Logo_Logogram Red.webp" alt="Reddie Logogram" style="height: 38px;">
             </div>
-            <h3>Welcome back</h3>
-            <p class="login-modal-subtitle">Log in to your Reddie workspace account</p>
+            <h3 data-cms="login.title">Welcome back</h3>
+            <p class="login-modal-subtitle" data-cms="login.subtitle">Log in to your Reddie workspace account</p>
             
             <form class="login-modal-form" id="loginModalForm">
                 <div class="login-form-group">
-                    <label for="loginEmail">Email</label>
-                    <input type="email" id="loginEmail" placeholder="Enter your email" required>
+                    <label for="loginEmail" data-cms="login.label_email">Email</label>
+                    <input type="email" id="loginEmail" placeholder="Enter your email" required data-cms="login.ph_email" data-cms-attr="placeholder">
                 </div>
                 <div class="login-form-group">
-                    <label for="loginPassword">Password</label>
-                    <input type="password" id="loginPassword" placeholder="Enter your password" required>
+                    <label for="loginPassword" data-cms="login.label_password">Password</label>
+                    <input type="password" id="loginPassword" placeholder="Enter your password" required data-cms="login.ph_password" data-cms-attr="placeholder">
                 </div>
                 <div class="login-form-actions">
                     <label class="remember-me">
-                        <input type="checkbox"> Remember me
+                        <input type="checkbox"> <span data-cms="login.remember">Remember me</span>
                     </label>
-                    <a href="#" class="forgot-pass">Forgot password?</a>
+                    <a href="#" class="forgot-pass" data-cms="login.forgot">Forgot password?</a>
                 </div>
-                <button type="submit" class="login-submit-btn" id="loginSubmitBtn">Log In</button>
+                <button type="submit" class="login-submit-btn" id="loginSubmitBtn" data-cms="login.submit">Log In</button>
             </form>
             
             <div class="login-modal-footer">
-                Don't have an account? <a href="#" class="signup-link">Sign up</a>
+                <span data-cms="login.footer_text">Don't have an account?</span> <a href="#" class="signup-link" data-cms="login.signup">Sign up</a>
             </div>
         </div>
     </div>
 
     <!-- Main JavaScript File -->
-    <script src="style/script.js?v=20260826-2"></script>
-    <script src="style/live.js?v=20260826-2"></script>
+    <script src="style/script.js?v=20260901-f1"></script>
+    <script src="style/live.js?v=20260901-f1"></script>
 </body>
 </html>

@@ -1,11 +1,12 @@
 import { buildApp } from './app.js';
-import { migrate, seedAdmin } from './db.js';
+import { migrate, seedAdmin, seedSettings } from './db.js';
 
 const PORT = Number(process.env.PORT || 8080);
 
 try {
   await migrate();
   await seedAdmin();
+  await seedSettings();
   buildApp().listen(PORT, () => console.log(`[reddie-api] listening on :${PORT}`));
 } catch (e) {
   console.error('[boot] fatal:', e.message);

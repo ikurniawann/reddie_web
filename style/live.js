@@ -12,6 +12,8 @@
     var state = {
         ready: false,          // true bila /api/content berhasil dimuat
         models: [],
+        settings: {},
+        skills: [],
         sessionId: sessionStorage.getItem('reddieSession') || null,
     };
 
@@ -56,67 +58,112 @@
     };
 
     // ── Hidrasi konten dari CMS ──────────────────────────────────────
+    // Kontrak: HTML menyatakan kunci kontennya sendiri lewat data-cms,
+    // jadi tidak ada lagi selektor CSS rapuh di berkas ini.
+    //
+    //   data-cms="grup.field"          -> isi teks elemen
+    //   data-cms-attr="placeholder"    -> isi atribut itu, bukan teksnya
+    //   data-cms-href="grup.field"     -> isi href (boleh bareng data-cms)
+    //
+    // Teks bawaan di HTML selalu jadi cadangan: bila kunci tidak ada di CMS
+    // atau nilainya kosong, elemen dibiarkan apa adanya.
+
+    function lookup(key) {
+        var i = String(key).indexOf('.');
+        if (i < 0) return undefined;
+        var grp = (state.settings || {})[key.slice(0, i)];
+        return grp ? grp[key.slice(i + 1)] : undefined;
+    }
+
+    function hydrateText(root) {
+        var scope = root || document;
+        var n = 0;
+        [].forEach.call(scope.querySelectorAll('[data-cms]'), function (el) {
+            var v = lookup(el.getAttribute('data-cms'));
+            if (v == null || v === '') return;
+            var attr = el.getAttribute('data-cms-attr');
+            if (attr) el.setAttribute(attr, v);
+            else el.textContent = v;
+            n++;
+        });
+        [].forEach.call(scope.querySelectorAll('[data-cms-href]'), function (el) {
+            var v = lookup(el.getAttribute('data-cms-href'));
+            if (v) el.setAttribute('href', v);
+        });
+        return n;
+    }
+
+    // Daftar & blok yang dirender ulang (bukan sekadar diisi teksnya)
+    function hydrateLists(root) {
+        var scope = root || document;
+
+        // Chip saran di panel chat
+        var chips = (state.settings.welcome || {}).chips;
+        var chipsBox = scope.querySelector('#chatWelcomeState .suggestion-chips');
+        if (chipsBox && Array.isArray(chips) && chips.length) {
+            chipsBox.innerHTML = chips.map(function (c) {
+                return '<button class="chip">' + esc(c) + '</button>';
+            }).join('');
+            if (window.bindChipClickListeners) window.bindChipClickListeners();
+        }
+
+        // Kartu AI Skills — ditemukan lewat penanda, bukan tebakan gaya inline
+        var skillsWrap = scope.querySelector('[data-cms-skills]');
+        if (skillsWrap && (state.skills || []).length) {
+            skillsWrap.innerHTML = state.skills.map(function (k) {
+                var color = k.color || '#ef4444';
+                var icon = esc(k.icon || 'fa-bolt');
+                return '<div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">' +
+                    '<div style="display:flex;align-items:center;gap:8px;">' +
+                    '<span style="width:32px;height:32px;border-radius:8px;background:' + esc(color) + '1a;display:flex;align-items:center;justify-content:center;color:' + esc(color) + ';"><i class="fa-solid ' + icon + '" style="font-size:1.1rem;"></i></span>' +
+                    '<div><h4 style="margin:0;font-size:0.85rem;color:#111827;font-weight:700;">' + esc(k.title) + '</h4>' +
+                    '<span style="font-size:0.68rem;color:#6b7280;font-weight:500;">' + esc(k.subtitle || '') + '</span></div></div>' +
+                    '<p style="margin:0;font-size:0.75rem;color:#4b5563;line-height:1.4;">' + esc(k.description || '') + '</p>' +
+                    '<button class="btn-escalate btn-skill-' + esc(k.slug) + '" style="background:' + esc(color) + ';color:white;border:none;font-weight:700;width:100%;padding:0.55rem;border-radius:6px;cursor:pointer;transition:all 0.2s;font-size:0.78rem;">' +
+                    '<i class="fa-solid ' + icon + '"></i> ' + esc(k.button_label || k.title) + '</button></div>';
+            }).join('');
+        }
+    }
+
+    // Dipanggil ulang oleh script.js setiap kali sebagian DOM diganti,
+    // supaya konten CMS tidak tertimpa markup bawaan.
+    function rehydrate(root) {
+        if (!state.ready) return 0;
+        var n = hydrateText(root);
+        hydrateLists(root);
+        return n;
+    }
+    window.REDDIE_HYDRATE = rehydrate;
+
     function hydrate(d) {
-        var s = d.settings || {};
-        function setText(sel, val) { var el = document.querySelector(sel); if (el && val) el.textContent = val; }
+        state.settings = d.settings || {};
+        state.skills = d.skills || [];
 
-        if (s.hero) {
-            var t = document.querySelector('.brand-title-huge');
-            if (t && s.hero.title) t.innerHTML = esc(s.hero.title) + '<span class="logo-reg">®</span>';
-            setText('.brand-subtitle', s.hero.subtitle);
-        }
-        if (s.welcome) {
-            setText('.chat-welcome-title', s.welcome.title);
-            setText('.chat-welcome-subtitle', s.welcome.subtitle);
-            var chipsBox = document.querySelector('#chatWelcomeState .suggestion-chips');
-            if (chipsBox && Array.isArray(s.welcome.chips) && s.welcome.chips.length) {
-                chipsBox.innerHTML = s.welcome.chips.map(function (c) {
-                    return '<button class="chip">' + esc(c) + '</button>';
-                }).join('');
-            }
-        }
-        if (s.socials) {
-            var ig = document.querySelector('.footer-social-link[href*="instagram"]');
-            var tg = document.querySelector('.footer-social-link[href*="telegram"]');
-            if (ig && s.socials.instagram) ig.href = s.socials.instagram;
-            if (tg && s.socials.telegram) tg.href = s.socials.telegram;
-        }
-        if (s.contact) {
-            setText('.contact-card .section-title', s.contact.title);
-            setText('.contact-subtitle', s.contact.subtitle);
-        }
+        hydrateText(document);
+        hydrateLists(document);
 
-        // Dropdown agent (header dashboard)
+        // Dropdown agent. data-agent memakai SLUG, bukan nama tampilan —
+        // supaya mengganti nama agent di CMS tidak memutus rutenya ke server.
         var dd = document.querySelector('.db-agent-dropdown-content');
         var dropdownAgents = (d.agents || []).filter(function (a) { return a.show_in_dropdown; });
         if (dd && dropdownAgents.length) {
             dd.innerHTML = dropdownAgents.map(function (a, i) {
-                return '<div class="agent-opt' + (i === 0 ? ' active' : '') + '" data-agent="' + esc(a.name) + '">' + esc(a.name) + '</div>';
+                return '<div class="agent-opt' + (i === 0 ? ' active' : '') + '" data-agent="' + esc(a.slug) + '">' + esc(a.name) + '</div>';
             }).join('');
+            var btn = document.getElementById('activeAgentBtn');
+            if (btn) {
+                var dot = btn.querySelector('.status-dot');
+                btn.innerHTML = (dot ? dot.outerHTML : '') + ' ' + esc(dropdownAgents[0].name) +
+                    ' <i class="fa-solid fa-chevron-down"></i>';
+            }
         }
 
         // Carousel About (dibaca script.js lewat override)
         var carousel = (d.agents || []).filter(function (a) { return a.show_in_carousel; });
         if (carousel.length) {
             window.__aboutAgentsOverride = carousel.map(function (a) {
-                return { name: a.name.toUpperCase(), image: a.image, desc: a.description || '' };
+                return { name: String(a.name).toUpperCase(), image: a.image, desc: a.description || '' };
             });
-        }
-
-        // Kartu AI Skills (kolom tengah)
-        var skillsWrap = document.querySelector('.billing-card > div[style*="flex-direction: column"]');
-        if (skillsWrap && (d.skills || []).length) {
-            skillsWrap.innerHTML = d.skills.map(function (k) {
-                var color = k.color || '#ef4444';
-                return '<div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0,0,0,0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">' +
-                    '<div style="display:flex;align-items:center;gap:8px;">' +
-                    '<span style="width:32px;height:32px;border-radius:8px;background:' + esc(color) + '1a;display:flex;align-items:center;justify-content:center;color:' + esc(color) + ';"><i class="fa-solid ' + esc(k.icon || 'fa-bolt') + '" style="font-size:1.1rem;"></i></span>' +
-                    '<div><h4 style="margin:0;font-size:0.85rem;color:#111827;font-weight:700;">' + esc(k.title) + '</h4>' +
-                    '<span style="font-size:0.68rem;color:#6b7280;font-weight:500;">' + esc(k.subtitle || '') + '</span></div></div>' +
-                    '<p style="margin:0;font-size:0.75rem;color:#4b5563;line-height:1.4;">' + esc(k.description || '') + '</p>' +
-                    '<button class="btn-escalate btn-skill-' + esc(k.slug) + '" style="background:' + esc(color) + ';color:white;border:none;font-weight:700;width:100%;padding:0.55rem;border-radius:6px;cursor:pointer;transition:all 0.2s;font-size:0.78rem;">' +
-                    '<i class="fa-solid ' + esc(k.icon || 'fa-bolt') + '"></i> ' + esc(k.button_label || k.title) + '</button></div>';
-            }).join('');
         }
 
         // Panel Model (toolbar chat) dari registry API
@@ -219,7 +266,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260826-2';
+        sc.src = 'style/editor.js?v=20260901-f1';
         document.body.appendChild(sc);
     }
 

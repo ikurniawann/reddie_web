@@ -169,7 +169,9 @@ function setupDashboardDemo() {
             item.classList.add('active');
             
             // 2. Extract selected menu text
-            let tabName = item.childNodes[item.childNodes.length - 1].textContent.trim();
+            // data-key mengunci identitas menu; teksnya bebas diubah lewat CMS.
+            let tabName = item.dataset.key ||
+                item.childNodes[item.childNodes.length - 1].textContent.trim();
             if (item.classList.contains('menu-more')) {
                 tabName = "And many more..";
             }
@@ -186,6 +188,7 @@ function setupDashboardDemo() {
     });
     
     // Suggestion chips click triggers typing & automated sending
+    window.bindChipClickListeners = bindChipClickListeners;
     function bindChipClickListeners() {
         const chips = document.querySelectorAll('.suggestion-chips .chip');
         chips.forEach(chip => {
@@ -1000,7 +1003,7 @@ function setupDashboardDemo() {
                                 Select an active socket below to execute custom data transformations directly on the active discussion.
                             </p>
 
-                            <div style="display: flex; flex-direction: column; gap: 1rem;">
+                            <div style="display: flex; flex-direction: column; gap: 1rem;" data-cms-skills>
                                 <!-- Skill 1: Generate PDF -->
                                 <div style="background: rgba(0,0,0,0.02); border: 1px solid rgba(0, 0, 0, 0.05); border-radius: 12px; padding: 0.9rem; display: flex; flex-direction: column; gap: 0.6rem;">
                                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -1121,6 +1124,13 @@ function setupDashboardDemo() {
         // Bind event listeners to newly generated chips & stats elements
         bindChipClickListeners();
         bindInteractiveStatsFeatures();
+
+        // Markup di atas menimpa hasil hidrasi CMS. Pulihkan lagi:
+        // tab bawaan memakai konten CMS sepenuhnya, tab lain punya teks
+        // sendiri yang memang tidak dikelola CMS — cukup kolom tengahnya.
+        if (window.REDDIE_HYDRATE) {
+            window.REDDIE_HYDRATE(tabName === 'Chat & Discussion' ? document : statsCol);
+        }
     }
     
     function getAgentMockResponse(query, turnNum) {

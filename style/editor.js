@@ -12,6 +12,7 @@
     var dirty = {};            // kumpulan operasi tertunda, key unik -> op
     var adminData = { agents: [], skills: [] };
     var content = window.__reddieContent || { settings: {} };
+    var schema = { groups: {}, fields: {} };   // diisi dari /api/admin/fields
 
     // ── util ─────────────────────────────────────────────────────
     function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -32,6 +33,7 @@
     var css = document.createElement('style');
     css.textContent =
         '[data-re]{outline:2px dashed transparent;outline-offset:3px;transition:outline-color .15s;cursor:text}' +
+        '[data-re]:empty{min-width:2rem;min-height:1em;outline-color:#f59e0b}' +
         '[data-re]:hover{outline-color:#ff3333}' +
         '[data-re]:focus{outline-color:#ff3333;outline-style:solid;background:rgba(255,51,51,0.06)}' +
         '.re-toolbar{position:fixed;bottom:18px;left:50%;transform:translateX(-50%);z-index:99999;' +
@@ -50,6 +52,8 @@
         '.re-item{position:relative}' +
         '.re-imgpick{cursor:pointer!important;outline:2px dashed transparent;outline-offset:4px}' +
         '.re-imgpick:hover{outline-color:#ff3333}' +
+        '.re-limit{position:fixed;bottom:70px;left:50%;transform:translateX(-50%);z-index:99999;background:#b45309;color:#fff;padding:.45rem .9rem;border-radius:8px;font:600 12px system-ui;opacity:0;transition:opacity .2s;pointer-events:none}' +
+        '.re-attrpick{cursor:pointer!important}' +
         '.re-banner{position:fixed;top:0;left:0;right:0;z-index:99999;background:#ff3333;color:#fff;' +
         'text-align:center;padding:.6rem;font:600 13px system-ui}.re-banner a{color:#fff}';
     document.head.appendChild(css);
@@ -103,27 +107,77 @@
     }
 
     // ── teks inline: elemen tunggal -> settings ──────────────────
-    var TEXT_BINDINGS = [
-        { sel: '.brand-title-huge',           key: 'hero',    field: 'title',    strip: '®' },
-        { sel: '.brand-subtitle',             key: 'hero',    field: 'subtitle' },
-        { sel: '.chat-welcome-title',         key: 'welcome', field: 'title' },
-        { sel: '.chat-welcome-subtitle',      key: 'welcome', field: 'subtitle' },
-        { sel: '.contact-card .section-title',key: 'contact', field: 'title' },
-        { sel: '.contact-subtitle',           key: 'contact', field: 'subtitle' },
-    ];
-    TEXT_BINDINGS.forEach(function (b) {
-        var el = document.querySelector(b.sel);
-        if (!el) return;
-        el.setAttribute('data-re', '');
-        el.setAttribute('contenteditable', 'plaintext-only');
-        el.setAttribute('spellcheck', 'false');
-        el.addEventListener('input', function () {
-            var v = el.textContent;
-            if (b.strip) v = v.split(b.strip).join('');
-            var patch = {}; patch[b.field] = v.trim();
-            markDirty('setting:' + b.key + '.' + b.field, { type: 'setting', key: b.key, patch: patch });
+    // ── teks inline: dipindai dari kontrak data-cms ──────────────
+    // Tidak ada lagi daftar selektor di sini. Setiap elemen bertanda
+    // data-cms otomatis bisa disunting, jadi menambah field yang bisa
+    // diedit cukup dengan menambah satu atribut di index.html.
+    var textCount = 0;
+
+    function pushSetting(grp, field, value) {
+        var patch = {}; patch[field] = value;
+        markDirty('setting:' + grp + '.' + field, { type: 'setting', key: grp, patch: patch });
+    }
+
+    var limitBox = null;
+    function toastLimit(msg) {
+        if (!limitBox) {
+            limitBox = document.createElement('div');
+            limitBox.className = 're-limit';
+            document.body.appendChild(limitBox);
+        }
+        limitBox.textContent = msg;
+        limitBox.style.opacity = '1';
+        clearTimeout(limitBox._t);
+        limitBox._t = setTimeout(function () { limitBox.style.opacity = '0'; }, 2600);
+    }
+
+    function bindTextFields() {
+        [].forEach.call(document.querySelectorAll('[data-cms]'), function (el) {
+            if (el.hasAttribute('data-re')) return;              // sudah terpasang
+            var key = el.getAttribute('data-cms');
+            var dot = key.indexOf('.');
+            if (dot < 0) return;
+            var grp = key.slice(0, dot), field = key.slice(dot + 1);
+            var meta = (schema.fields || {})[key] || {};
+            var attr = el.getAttribute('data-cms-attr');
+
+            el.setAttribute('data-re', '');
+            el.setAttribute('title', meta.label
+                ? meta.label + (meta.help ? ' — ' + meta.help : '')
+                : key);
+
+            if (attr) {
+                // Placeholder tidak bisa disunting di tempat: minta lewat dialog.
+                el.classList.add('re-attrpick');
+                el.addEventListener('click', function (e) {
+                    e.preventDefault(); e.stopPropagation();
+                    var cur = el.getAttribute(attr) || '';
+                    var v = prompt((meta.label || key) + (meta.help ? '\n' + meta.help : ''), cur);
+                    if (v == null || v === cur) return;
+                    el.setAttribute(attr, v);
+                    pushSetting(grp, field, v);
+                }, true);
+            } else {
+                el.setAttribute('contenteditable', 'plaintext-only');
+                el.setAttribute('spellcheck', 'false');
+                el.addEventListener('input', function () {
+                    var v = el.textContent.trim();
+                    if (meta.max && v.length > meta.max) {
+                        toastLimit((meta.label || key) + ': maksimal ' + meta.max +
+                                   ' karakter, sekarang ' + v.length);
+                    }
+                    pushSetting(grp, field, v);
+                });
+                // Enter tidak boleh membuat baris baru pada field satu baris
+                if (meta.type !== 'textarea') {
+                    el.addEventListener('keydown', function (e) {
+                        if (e.key === 'Enter') { e.preventDefault(); el.blur(); }
+                    });
+                }
+            }
+            textCount++;
         });
-    });
+    }
 
     // ── kontrol item koleksi (naik/turun/hapus) ──────────────────
     function attachCtl(el, opts) {
@@ -313,15 +367,16 @@
         bar.remove();
         return;
     }
-    Promise.all([req('/admin/agents'), req('/admin/skills')]).then(function (r) {
-        adminData.agents = r[0]; adminData.skills = r[1];
+    Promise.all([req('/admin/agents'), req('/admin/skills'), req('/admin/fields')]).then(function (r) {
+        adminData.agents = r[0]; adminData.skills = r[1]; schema = r[2] || schema;
         renderToolbar();
+        bindTextFields();
         initChips();
         initSkills();
         initAgentDropdown();
         initCarousel();
         window.__reddieEditorReady = true;
-        console.log('[reddie-editor] aktif —', TEXT_BINDINGS.length, 'teks,', adminData.skills.length, 'skill,', adminData.agents.length, 'agent');
+        console.log('[reddie-editor] aktif —', textCount, 'teks,', adminData.skills.length, 'skill,', adminData.agents.length, 'agent');
     }).catch(function (e) {
         bar.remove();
         if (e.status === 401) banner('Sesi admin kedaluwarsa — <a href="api/admin">login ulang</a> lalu kembali ke mode edit.');

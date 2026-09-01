@@ -3,6 +3,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import bcrypt from 'bcryptjs';
+import { defaultSettings } from './fields.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -36,6 +37,21 @@ export async function migrate() {
       client.release();
     }
   }
+}
+
+// Tanam nilai awal seluruh grup settings dari skema field.
+// Nilai yang SUDAH ADA di database selalu menang — jadi menambah field baru
+// di fields.js aman dijalankan berulang dan tidak menimpa suntingan editor.
+export async function seedSettings() {
+  const defaults = defaultSettings();
+  for (const [key, value] of Object.entries(defaults)) {
+    await q(
+      `INSERT INTO settings (key, value, updated_at) VALUES ($1, $2, now())
+       ON CONFLICT (key) DO UPDATE SET value = $2 || settings.value, updated_at = now()`,
+      [key, JSON.stringify(value)]
+    );
+  }
+  console.log(`[seed] settings disinkronkan: ${Object.keys(defaults).length} grup`);
 }
 
 // Buat akun admin pertama dari env bila belum ada

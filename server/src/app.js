@@ -5,6 +5,7 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { q } from './db.js';
 import { complete, providerReady, ProviderError } from './providers.js';
+import { fieldSchema } from './fields.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -163,6 +164,10 @@ export function buildApp() {
 
   const admin = express.Router();
   admin.use(requireAdmin);
+
+  // Skema field: label manusiawi, jenis input, teks bantuan.
+  // Dipakai panel admin & editor visual untuk membangun form yang ramah.
+  admin.get('/fields', (_req, res) => res.json(fieldSchema()));
 
   admin.get('/settings', async (_req, res) => {
     const r = await q('SELECT key, value FROM settings ORDER BY key');
