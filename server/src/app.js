@@ -13,7 +13,7 @@ import { extractText, ExtractError, MAX_ATTACH_BYTES, MAX_PER_SESSION } from './
 import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskError,
          TASK_TOOLS, runTaskTool, listSchedule, createMeeting } from './tasks.js';
 import { googleStatus } from './google.js';
-import { fetchNews, NewsError, NEWS_TOOL, runNewsTool } from './news.js';
+import { fetchNews, NewsError, NEWS_TOOL, runNewsTool, ARTICLE_TOOL, runArticleTool } from './news.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -159,11 +159,13 @@ export function buildApp() {
     const taskCfg = await taskConfig();
     const intg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
     // Tool berita selalu tersedia: tidak butuh kredensial apa pun.
-    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL];
+    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL, ARTICLE_TOOL];
     const toolCtxHasGoogle = !!String(req.headers['x-google-token'] || '');
     system += '\n\nKamu bisa mengambil berita terbaru lewat tool get_trending_news. ' +
       'Pakai itu bila ditanya soal berita atau tren, sebutkan sumber dan waktunya, ' +
-      'dan jangan mengarang judul yang tidak ada di hasil tool.';
+      'dan jangan mengarang judul yang tidak ada di hasil tool. Bila diminta ' +
+      'MERINGKAS sebuah berita, panggil read_news_article dulu untuk membaca ' +
+      'isinya — dilarang meringkas hanya dari judul, karena hasilnya jadi tebakan.';
     if (taskReady(taskCfg)) {
       system += '\n\nKamu punya akses ke sistem manajemen task lewat tool.\n' +
         'ATURAN MUTLAK: kamu TIDAK BOLEH mengatakan sebuah task sudah dibuat, ' +
@@ -217,9 +219,11 @@ export function buildApp() {
           let args = {};
           try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* argumen rusak */ }
           const fname = tc.function?.name;
-          const out = fname === 'get_trending_news'
-            ? await runNewsTool(args, { query: intg.news_query, lang: intg.news_lang, country: intg.news_country })
-            : await runTaskTool(taskCfg, fname, args, toolCtx);
+          const newsDefaults = { feeds: intg.news_feeds, query: intg.news_query,
+                                 lang: intg.news_lang, country: intg.news_country };
+          const out = fname === 'get_trending_news' ? await runNewsTool(args, newsDefaults)
+                    : fname === 'read_news_article' ? await runArticleTool(args, newsDefaults)
+                    : await runTaskTool(taskCfg, fname, args, toolCtx);
           if (out && out.ok && MUTATING.includes(fname)) tasksChanged = true;
           convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
         }
@@ -290,6 +294,7 @@ export function buildApp() {
     try {
       const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
       const r = await fetchNews({
+        feeds: cfg.news_feeds,
         query: cfg.news_query,
         lang: cfg.news_lang,
         country: cfg.news_country,

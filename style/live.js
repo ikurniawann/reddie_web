@@ -718,24 +718,35 @@
     }
 
     function newsRow(n, i) {
-        return '<a href="' + esc(n.link) + '" target="_blank" rel="noopener noreferrer" ' +
-               'style="display:block;text-decoration:none;background:rgba(0,0,0,.045);' +
+        // Bukan <a>: klik meminta agent membaca dan meringkas artikelnya,
+        // bukan membawa pengunjung keluar dari halaman.
+        return '<button data-newsread="' + esc(n.title) + '" ' +
+               'style="display:block;width:100%;text-align:left;background:rgba(0,0,0,.045);' +
                'border:1px solid rgba(0,0,0,.05);border-radius:11px;padding:.65rem .75rem;' +
-               'margin-bottom:.55rem;transition:background .15s;" ' +
+               'margin-bottom:.55rem;cursor:pointer;font:inherit;transition:background .15s;" ' +
                'onmouseover="this.style.background=\'rgba(0,0,0,.075)\'" ' +
                'onmouseout="this.style.background=\'rgba(0,0,0,.045)\'">' +
                '<div style="display:flex;gap:.55rem;">' +
                  '<span style="flex:0 0 auto;font-size:.72rem;font-weight:800;color:#ff3333;' +
                  'line-height:1.5;">' + (i + 1) + '</span>' +
-                 '<div style="min-width:0;">' +
+                 '<div style="min-width:0;flex:1;">' +
                    '<div style="font-size:.8rem;color:#111827;font-weight:600;line-height:1.4;">' +
                      esc(n.title) + '</div>' +
                    '<div style="font-size:.66rem;color:#6b7280;margin-top:.2rem;">' +
                      esc(n.source || '') + (n.published ? ' · ' + esc(sinceLabel(n.published)) : '') +
+                     ' · <span style="color:#ff3333;font-weight:600;">minta ringkasan</span>' +
                    '</div>' +
                  '</div>' +
-               '</div></a>';
+               '</div></button>';
     }
+
+    document.addEventListener('click', function (e) {
+        var b = e.target.closest('[data-newsread]');
+        if (!b) return;
+        e.preventDefault();
+        if (!window.reddieSend) return;
+        window.reddieSend('Ringkaskan berita ini beserta poin pentingnya: ' + b.dataset.newsread);
+    });
 
     function loadNews() {
         var box = document.querySelector('[data-newspanel]');
@@ -851,7 +862,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h1';
+        sc.src = 'style/editor.js?v=20260901-h2';
         document.body.appendChild(sc);
     }
 

@@ -83,7 +83,7 @@ export const FIELDS = {
   'console.news_tab':   { label: 'Tab berita',        type: 'text', max: 20, help: 'Tab di modul Research.', value: 'Trending' },
   'console.news_title': { label: 'Judul panel berita', type: 'text', max: 24, help: 'Judul besar di modul Research.', value: 'News Trending' },
   'console.menu_analyze':      { label: 'Menu 4', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Analyze' },
-  'console.menu_research':     { label: 'Menu 5', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Research' },
+  'console.menu_research':     { label: 'Menu 5', type: 'text', max: 26, help: 'Menu kolom kiri. Panel berita trending; klik judul untuk minta ringkasan lewat chat.', value: 'News' },
   'console.menu_automation':   { label: 'Menu 6', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Automation' },
   'console.menu_connectivity': { label: 'Menu 7', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Connectivity' },
   'console.menu_more':         { label: 'Menu 8', type: 'text', max: 26, help: 'Menu terakhir, ditampilkan miring.', value: 'And many more..' },
@@ -159,9 +159,14 @@ export const FIELDS = {
     help: 'Client ID dari Google Cloud Console. Boleh terlihat publik — memang dirancang begitu. Diisi supaya pengunjung bisa masuk dengan akun Google sendiri dan meeting masuk ke kalendernya sendiri. Kosongkan untuk mematikan tombol masuk Google.',
     value: '',
   },
+  'integrations.news_feeds': {
+    label: 'Alamat RSS berita', type: 'textarea', max: 500,
+    help: 'Satu alamat RSS per baris. Gunakan media yang memberi tautan LANGSUNG ke artikel, supaya Reddie bisa membaca isinya untuk diringkas. Kosongkan untuk memakai Antara dan CNN Indonesia.',
+    value: 'https://www.antaranews.com/rss/terkini.xml\nhttps://www.cnnindonesia.com/teknologi/rss',
+  },
   'integrations.news_query': {
     label: 'Kata kunci berita', type: 'text', max: 80,
-    help: 'Topik yang dipantau di panel Research, misalnya "AI" atau "teknologi Indonesia". Kosongkan untuk menampilkan berita utama.',
+    help: 'Hanya dipakai bila daftar RSS di atas dikosongkan — mengaktifkan pencarian Google News. Perlu diketahui: tautan Google News tidak bisa dibaca isinya, jadi fitur ringkasan tidak akan bekerja.',
     value: 'AI OR teknologi',
   },
   'integrations.news_lang': {

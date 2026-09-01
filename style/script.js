@@ -278,6 +278,12 @@ function setupDashboardDemo() {
         }
     });
     
+    // Diekspos supaya live.js bisa mengirim pesan dari panel (mis. klik
+    // kartu berita) tanpa menduplikasi alur kirim yang sudah ada di sini.
+    window.reddieSend = function (teks) {
+        if (typeof teks === 'string' && teks.trim()) chatInput.value = teks.trim();
+        handleUserMessageSend();
+    };
     function handleUserMessageSend() {
         const queryText = chatInput.value.trim();
         if (!queryText || isGenerating) return;
