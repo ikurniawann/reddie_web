@@ -681,6 +681,67 @@
         }).catch(function (err) { meetMsg(err.message, true); });
     }
 
+    // ── Panel berita trending ────────────────────────────────────────
+    function sinceLabel(iso) {
+        if (!iso) return '';
+        var d = new Date(iso);
+        if (isNaN(d)) return '';
+        var menit = Math.round((Date.now() - d) / 60000);
+        if (menit < 1) return 'baru saja';
+        if (menit < 60) return menit + ' menit lalu';
+        var jam = Math.round(menit / 60);
+        if (jam < 24) return jam + ' jam lalu';
+        var hari = Math.round(jam / 24);
+        if (hari < 7) return hari + ' hari lalu';
+        return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+    }
+
+    function newsRow(n, i) {
+        return '<a href="' + esc(n.link) + '" target="_blank" rel="noopener noreferrer" ' +
+               'style="display:block;text-decoration:none;background:rgba(0,0,0,.045);' +
+               'border:1px solid rgba(0,0,0,.05);border-radius:11px;padding:.65rem .75rem;' +
+               'margin-bottom:.55rem;transition:background .15s;" ' +
+               'onmouseover="this.style.background=\'rgba(0,0,0,.075)\'" ' +
+               'onmouseout="this.style.background=\'rgba(0,0,0,.045)\'">' +
+               '<div style="display:flex;gap:.55rem;">' +
+                 '<span style="flex:0 0 auto;font-size:.72rem;font-weight:800;color:#ff3333;' +
+                 'line-height:1.5;">' + (i + 1) + '</span>' +
+                 '<div style="min-width:0;">' +
+                   '<div style="font-size:.8rem;color:#111827;font-weight:600;line-height:1.4;">' +
+                     esc(n.title) + '</div>' +
+                   '<div style="font-size:.66rem;color:#6b7280;margin-top:.2rem;">' +
+                     esc(n.source || '') + (n.published ? ' · ' + esc(sinceLabel(n.published)) : '') +
+                   '</div>' +
+                 '</div>' +
+               '</div></a>';
+    }
+
+    function loadNews() {
+        var box = document.querySelector('[data-newspanel]');
+        if (!box) return Promise.resolve();
+        return fetch(API + '/news', { signal: AbortSignal.timeout(15000) })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (d) {
+                if (d.error) {
+                    box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">' + esc(d.error) + '</p>';
+                    return;
+                }
+                var items = d.items || [];
+                window.__reddieNews = items;      // dipakai chat untuk meringkas
+                box.innerHTML =
+                    (d.topic
+                      ? '<p style="font-size:.68rem;color:#6b7280;margin:-.3rem 0 .6rem;">Topik: <b>' +
+                        esc(d.topic) + '</b>' + (d.stale ? ' · sumber sedang bermasalah, menampilkan data terakhir' : '') + '</p>'
+                      : '') +
+                    (items.length ? items.map(newsRow).join('')
+                                  : '<p style="font-size:.78rem;color:#6b7280;margin:0;">Belum ada berita.</p>');
+            })
+            .catch(function () {
+                box.innerHTML = '<p style="font-size:.78rem;color:#b91c1c;margin:0;">Berita tidak terjangkau saat ini.</p>';
+            });
+    }
+    window.REDDIE_NEWS = loadNews;
+
     // ── Lampiran: berkas dibaca server, teksnya masuk ke percakapan ──
     var ACCEPT = '.pdf,.docx,.xlsx,.xlsm,.csv,.txt,.md,.png,.jpg,.jpeg,.webp,.gif,' +
                  'application/pdf,image/*';
@@ -769,7 +830,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-g8';
+        sc.src = 'style/editor.js?v=20260901-g9';
         document.body.appendChild(sc);
     }
 

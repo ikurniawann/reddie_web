@@ -80,6 +80,8 @@ export const FIELDS = {
   'console.sched_tab1':  { label: 'Tab jadwal',        type: 'text', max: 20, help: 'Tab pertama di modul Schedule.', value: 'Schedule List' },
   'console.sched_tab2':  { label: 'Tab meeting',       type: 'text', max: 20, help: 'Tab kedua di modul Schedule.', value: 'Meeting' },
   'console.sched_title': { label: 'Judul modul jadwal', type: 'text', max: 24, help: 'Judul besar di modul Schedule.', value: 'Schedule' },
+  'console.news_tab':   { label: 'Tab berita',        type: 'text', max: 20, help: 'Tab di modul Research.', value: 'Trending' },
+  'console.news_title': { label: 'Judul panel berita', type: 'text', max: 24, help: 'Judul besar di modul Research.', value: 'News Trending' },
   'console.menu_analyze':      { label: 'Menu 4', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Analyze' },
   'console.menu_research':     { label: 'Menu 5', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Research' },
   'console.menu_automation':   { label: 'Menu 6', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Automation' },
@@ -156,6 +158,26 @@ export const FIELDS = {
     label: 'Google OAuth Client ID', type: 'text', max: 200,
     help: 'Client ID dari Google Cloud Console. Boleh terlihat publik — memang dirancang begitu. Diisi supaya pengunjung bisa masuk dengan akun Google sendiri dan meeting masuk ke kalendernya sendiri. Kosongkan untuk mematikan tombol masuk Google.',
     value: '',
+  },
+  'integrations.news_query': {
+    label: 'Kata kunci berita', type: 'text', max: 80,
+    help: 'Topik yang dipantau di panel Research, misalnya "AI" atau "teknologi Indonesia". Kosongkan untuk menampilkan berita utama.',
+    value: 'AI OR teknologi',
+  },
+  'integrations.news_lang': {
+    label: 'Bahasa berita', type: 'text', max: 5,
+    help: 'Kode bahasa, misalnya id untuk Indonesia atau en untuk Inggris.',
+    value: 'id',
+  },
+  'integrations.news_country': {
+    label: 'Negara berita', type: 'text', max: 5,
+    help: 'Kode negara, misalnya ID atau US.',
+    value: 'ID',
+  },
+  'integrations.news_limit': {
+    label: 'Jumlah berita', type: 'int',
+    help: 'Berapa judul yang ditampilkan di panel Research.',
+    value: 8,
   },
   'integrations.task_limit': {
     label: 'Jumlah task yang ditampilkan', type: 'int',

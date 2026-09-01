@@ -13,6 +13,7 @@ import { extractText, ExtractError, MAX_ATTACH_BYTES, MAX_PER_SESSION } from './
 import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskError,
          TASK_TOOLS, runTaskTool, listSchedule, createMeeting } from './tasks.js';
 import { googleStatus } from './google.js';
+import { fetchNews, NewsError, NEWS_TOOL, runNewsTool } from './news.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -156,9 +157,14 @@ export function buildApp() {
     // dan menyelesaikan task — sehingga pengunjung bisa mengelolanya lewat
     // percakapan biasa. Tanpa konfigurasi, tool tidak dikirim sama sekali.
     const taskCfg = await taskConfig();
-    const tools = taskReady(taskCfg) ? TASK_TOOLS : null;
+    const intg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+    // Tool berita selalu tersedia: tidak butuh kredensial apa pun.
+    const tools = [...(taskReady(taskCfg) ? TASK_TOOLS : []), NEWS_TOOL];
     const toolCtxHasGoogle = !!String(req.headers['x-google-token'] || '');
-    if (tools) {
+    system += '\n\nKamu bisa mengambil berita terbaru lewat tool get_trending_news. ' +
+      'Pakai itu bila ditanya soal berita atau tren, sebutkan sumber dan waktunya, ' +
+      'dan jangan mengarang judul yang tidak ada di hasil tool.';
+    if (taskReady(taskCfg)) {
       system += '\n\nKamu punya akses ke sistem manajemen task lewat tool.\n' +
         'ATURAN MUTLAK: kamu TIDAK BOLEH mengatakan sebuah task sudah dibuat, ' +
         'diubah, dibatalkan, atau diselesaikan kecuali tool yang sesuai BARU SAJA ' +
@@ -211,7 +217,9 @@ export function buildApp() {
           let args = {};
           try { args = JSON.parse(tc.function?.arguments || '{}'); } catch { /* argumen rusak */ }
           const fname = tc.function?.name;
-          const out = await runTaskTool(taskCfg, fname, args, toolCtx);
+          const out = fname === 'get_trending_news'
+            ? await runNewsTool(args, { query: intg.news_query, lang: intg.news_lang, country: intg.news_country })
+            : await runTaskTool(taskCfg, fname, args, toolCtx);
           if (out && out.ok && MUTATING.includes(fname)) tasksChanged = true;
           convo.push({ role: 'tool', tool_call_id: tc.id, content: JSON.stringify(out) });
         }
@@ -268,6 +276,27 @@ export function buildApp() {
     const t = await updateTask(cfg, req.params.id, { status: req.body?.status, title: req.body?.title });
     res.json({ task: t });
   }));
+
+  // ═══════════════ BERITA TRENDING ═══════════════
+
+  app.get('/api/news', async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try {
+      const cfg = (await q(`SELECT value FROM settings WHERE key='integrations'`)).rows[0]?.value || {};
+      const r = await fetchNews({
+        query: cfg.news_query,
+        lang: cfg.news_lang,
+        country: cfg.news_country,
+        limit: Math.min(Math.max(Number(cfg.news_limit) || 8, 1), 20),
+      });
+      res.set('cache-control', 'public, max-age=300');
+      res.json({ ok: true, topic: String(cfg.news_query || '').trim() || null, ...r });
+    } catch (e) {
+      const status = e instanceof NewsError ? e.status : 500;
+      res.status(status).json({ error: e instanceof NewsError ? e.message : 'Gagal memuat berita.' });
+    }
+  });
 
   // ═══════════════ SCHEDULE & MEETING ═══════════════
 

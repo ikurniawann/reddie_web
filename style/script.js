@@ -795,51 +795,33 @@ function setupDashboardDemo() {
                 break;
                 
             case "Research":
+                // Panel berita trending. Isinya diisi live.js dari /api/news.
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Knowledge Base</span>
-                        <span class="stats-tab">Index</span>
+                        <span class="stats-tab active" data-cms="console.news_tab">Trending</span>
+                        <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card">
-                            <div class="billing-header">
-                                <h3>Knowledge Index</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-magnifying-glass-chart"></i></span>
-                            </div>
-                            <div>
-                                <div class="section-label">INDEXED SOURCES</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type"><i class="fa-solid fa-file-invoice" style="margin-right: 4px;"></i> Help Docs & FAQs</span>
-                                        <span class="dist-val">142 Pages</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type"><i class="fa-solid fa-code" style="margin-right: 4px;"></i> API Specifications</span>
-                                        <span class="dist-val">12 Files</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type"><i class="fa-brands fa-slack" style="margin-right: 4px;"></i> Slack Channels History</span>
-                                        <span class="dist-val">12,450 Messages</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div style="font-size: 0.72rem; font-weight: 700; color: #4b5563; text-align: center; margin-top: 0.4rem;">
-                                Last Indexed: 14 mins ago
-                            </div>
-                            <button class="btn-escalate">Sync Now</button>
+                        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:1rem;">
+                            <h3 style="margin:0;font-size:1.15rem;font-weight:800;color:#111827;letter-spacing:-.02em;"
+                                data-cms="console.news_title">News Trending</h3>
+                            <i class="fa-solid fa-newspaper" style="font-size:1.05rem;color:#374151;"></i>
+                        </div>
+                        <div data-newspanel>
+                            <p style="font-size:.78rem;color:#6b7280;margin:0;">Memuat berita…</p>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "Research & Knowledge Base";
-                welcomeSubtitleText = "Search across internal documentation and external APIs instantly.";
+                welcomeTitleText = "Research Console";
+                welcomeSubtitleText = "Pantau berita terbaru dan minta ringkasannya lewat percakapan.";
                 chipsHTML = `
-                    <button class="chip">Search API docs for auth</button>
-                    <button class="chip">Summarize help center article</button>
-                    <button class="chip">Find billing issues in logs</button>
-                    <button class="chip">Verify refund policy</button>
+                    <button class="chip">Ringkas berita trending hari ini</button>
+                    <button class="chip">Apa yang sedang ramai soal AI?</button>
+                    <button class="chip">Ada peluang bisnis dari berita ini?</button>
+                    <button class="chip">Buatkan draft posting dari berita teratas</button>
                 `;
                 break;
-                
+
             case "Automation":
                 statsHTML = `
                     <div class="stats-tabs">
@@ -1079,6 +1061,7 @@ function setupDashboardDemo() {
         // Panel Task Focus mengambil datanya sendiri setelah kerangkanya ada.
         if (tabName === 'Real-Time Discussion' && window.REDDIE_TASKS) window.REDDIE_TASKS();
         if (tabName === 'Task & Scheduling' && window.REDDIE_SCHEDULE) window.REDDIE_SCHEDULE();
+        if (tabName === 'Research' && window.REDDIE_NEWS) window.REDDIE_NEWS();
     }
     
     function getAgentMockResponse(query, turnNum) {
