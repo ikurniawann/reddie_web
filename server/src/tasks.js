@@ -382,28 +382,20 @@ export async function runTaskTool(cfg, name, args, ctx = {}) {
 // ── Jadwal & meeting ───────────────────────────────────────
 
 /**
- * Jadwal gabungan: kalender internal sistem task (acara, tenggat, show day)
- * ditambah acara Google milik pengunjung bila ia sudah masuk.
+ * Jadwal dari Google Calendar pengunjung.
+ *
+ * Kalender internal sistem task sengaja TIDAK ikut: yang relevan bagi
+ * pengunjung adalah agendanya sendiri, bukan tenggat dan show day proyek
+ * orang lain. Tanpa token, daftarnya memang kosong — itu keadaan yang
+ * benar, bukan kegagalan.
  */
 export async function listSchedule(cfg, googleToken) {
-  const internalP = call(cfg, '/calendar')
-    .then(d => {
-      const entries = d?.data?.entries || d?.entries || [];
-      return (Array.isArray(entries) ? entries : []).map(e => ({
-        date: e.date, title: e.title || '', kind: e.kind || '',
-        eventId: e.eventId || null, eventName: e.eventName || null, source: 'internal',
-      }));
-    })
-    .catch(() => []);   // kalender internal bermasalah tidak boleh menghapus acara Google
-
-  const googleP = googleToken
-    ? listCalendarEvents(googleToken).catch(() => [])
-    : Promise.resolve([]);
-
-  const [internal, google] = await Promise.all([internalP, googleP]);
-  return [...internal, ...google]
-    .filter(e => e.date)
-    .sort((a, b) => new Date(a.date) - new Date(b.date));
+  if (!googleToken) return [];
+  try {
+    return await listCalendarEvents(googleToken);
+  } catch {
+    return [];   // sesi Google kedaluwarsa: panel menawarkan masuk ulang
+  }
 }
 
 /**
