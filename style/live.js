@@ -962,7 +962,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-h4';
+        sc.src = 'style/editor.js?v=20260901-h5';
         document.body.appendChild(sc);
     }
 

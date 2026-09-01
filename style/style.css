@@ -1430,7 +1430,12 @@ body {
     line-height: 1;
     position: absolute;
     bottom: 3.5rem;
-    right: 4rem;
+    /* Dibentang penuh lalu ditengahkan, bukan digeser dengan transform:
+       elemen ini punya transisi opacity saat korsel berganti agent, dan
+       transform di sini akan ikut tertransisi lalu terlihat bergoyang. */
+    left: 0;
+    right: 0;
+    text-align: center;
     z-index: 1;
     text-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
 }
