@@ -286,6 +286,124 @@
         else runSync();
     }, true);
 
+    // ── Panel Task Focus ─────────────────────────────────────────────
+    // Semua panggilan lewat server kita sendiri; token sistem task tidak
+    // pernah sampai ke browser.
+
+    function taskRow(t) {
+        var due = t.due ? new Date(t.due).toLocaleDateString('id-ID', { day: 'numeric', month: 'short' }) : '';
+        var pri = (t.priority || '').toString().toLowerCase();
+        var priColor = pri.indexOf('high') === 0 || pri === 'tinggi' ? '#dc2626'
+                     : pri.indexOf('low') === 0 || pri === 'rendah' ? '#6b7280' : '#b45309';
+        return '<div style="display:flex;align-items:flex-start;gap:.55rem;padding:.5rem 0;' +
+               'border-top:1px solid rgba(0,0,0,.06);">' +
+               '<input type="checkbox" data-done="' + esc(t.id) + '"' + (t.done ? ' checked disabled' : '') +
+               ' style="margin-top:.2rem;cursor:' + (t.done ? 'default' : 'pointer') + ';flex:0 0 auto;">' +
+               '<div style="flex:1;min-width:0;">' +
+               '<div style="font-size:.78rem;color:#111827;font-weight:600;line-height:1.35;' +
+               (t.done ? 'text-decoration:line-through;opacity:.55;' : '') + '">' + esc(t.title) + '</div>' +
+               '<div style="font-size:.66rem;color:#6b7280;margin-top:.1rem;">' +
+               (t.status ? esc(t.status) : '') +
+               (due ? ' · jatuh tempo ' + esc(due) : '') +
+               (t.assignee ? ' · ' + esc(t.assignee) : '') + '</div></div>' +
+               (pri ? '<span style="flex:0 0 auto;font-size:.6rem;font-weight:700;text-transform:uppercase;' +
+                      'color:' + priColor + ';border:1px solid ' + priColor + '33;border-radius:99px;' +
+                      'padding:.1rem .4rem;">' + esc(pri) + '</span>' : '') +
+               '</div>';
+    }
+
+    function renderTasks(box, d) {
+        if (!d.configured) {
+            box.innerHTML = '<p style="font-size:.75rem;color:#6b7280;margin:0;line-height:1.5;">' +
+                'Panel task belum tersambung. Isi alamat API dan nomor akun di panel admin, ' +
+                'bagian <b>Integrasi &amp; otomasi</b>.</p>';
+            return;
+        }
+        var tasks = d.tasks || [];
+        var open = tasks.filter(function (t) { return !t.done; });
+        box.innerHTML =
+            '<div style="display:flex;gap:.5rem;margin-bottom:.3rem;">' +
+              '<div style="flex:1;background:rgba(0,0,0,.03);border-radius:8px;padding:.45rem .6rem;">' +
+                '<div style="font-size:.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Belum selesai</div>' +
+                '<div style="font-size:1.1rem;font-weight:800;color:#111827;">' + open.length + '</div></div>' +
+              '<div style="flex:1;background:rgba(0,0,0,.03);border-radius:8px;padding:.45rem .6rem;">' +
+                '<div style="font-size:.62rem;color:#6b7280;text-transform:uppercase;letter-spacing:.05em;">Total</div>' +
+                '<div style="font-size:1.1rem;font-weight:800;color:#111827;">' + tasks.length + '</div></div>' +
+            '</div>' +
+            (tasks.length
+              ? tasks.slice(0, 12).map(taskRow).join('')
+              : '<p style="font-size:.75rem;color:#6b7280;margin:.4rem 0;">Belum ada task. Tambahkan yang pertama di bawah.</p>') +
+            '<div style="display:flex;gap:.4rem;margin-top:.7rem;">' +
+              '<input data-newtask placeholder="Tambah task baru…" style="flex:1;min-width:0;font:inherit;' +
+              'font-size:.75rem;padding:.4rem .55rem;border:1px solid rgba(0,0,0,.12);border-radius:6px;">' +
+              '<button data-addtask style="flex:0 0 auto;background:#ff3333;color:#fff;border:none;' +
+              'border-radius:6px;padding:.4rem .7rem;font:700 .72rem system-ui;cursor:pointer;">Tambah</button>' +
+            '</div>' +
+            '<p data-taskmsg style="font-size:.68rem;color:#6b7280;margin:.4rem 0 0;"></p>';
+    }
+
+    function loadTasks() {
+        var box = document.querySelector('[data-taskpanel]');
+        if (!box) return;
+        fetch(API + '/tasks', { signal: AbortSignal.timeout(15000) })
+            .then(function (r) { return r.json().catch(function () { return {}; }); })
+            .then(function (d) { renderTasks(box, d); })
+            .catch(function () {
+                box.innerHTML = '<p style="font-size:.75rem;color:#b91c1c;margin:0;">' +
+                    'Sistem task tidak terjangkau saat ini.</p>';
+            });
+    }
+    window.REDDIE_TASKS = loadTasks;
+
+    function taskMsg(t, bad) {
+        var el = document.querySelector('[data-taskmsg]');
+        if (el) { el.textContent = t || ''; el.style.color = bad ? '#b91c1c' : '#6b7280'; }
+    }
+
+    document.addEventListener('change', function (e) {
+        var cb = e.target.closest('[data-done]');
+        if (!cb || cb.disabled) return;
+        cb.disabled = true;
+        taskMsg('Menandai selesai…');
+        fetch(API + '/tasks/' + encodeURIComponent(cb.dataset.done), {
+            method: 'PATCH',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ status: 'done' }),
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+                if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+            });
+        }).then(function () { taskMsg('Tersimpan.'); loadTasks(); })
+          .catch(function (err) { cb.disabled = false; cb.checked = false; taskMsg(err.message, true); });
+    });
+
+    function addTask() {
+        var input = document.querySelector('[data-newtask]');
+        if (!input) return;
+        var title = input.value.trim();
+        if (!title) { input.focus(); return; }
+        taskMsg('Menambahkan…');
+        fetch(API + '/tasks', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ title: title }),
+        }).then(function (r) {
+            return r.json().catch(function () { return {}; }).then(function (d) {
+                if (!r.ok) throw new Error(d.error || 'Gagal (HTTP ' + r.status + ')');
+            });
+        }).then(function () { input.value = ''; taskMsg('Task ditambahkan.'); loadTasks(); })
+          .catch(function (err) { taskMsg(err.message, true); });
+    }
+
+    document.addEventListener('click', function (e) {
+        if (e.target.closest('[data-addtask]')) { e.preventDefault(); addTask(); }
+    });
+    document.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' && e.target.matches && e.target.matches('[data-newtask]')) {
+            e.preventDefault(); addTask();
+        }
+    });
+
     // ── Lampiran: berkas dibaca server, teksnya masuk ke percakapan ──
     var ACCEPT = '.pdf,.docx,.xlsx,.xlsm,.csv,.txt,.md,.png,.jpg,.jpeg,.webp,.gif,' +
                  'application/pdf,image/*';
@@ -374,7 +492,7 @@
     function loadEditor() {
         if (!/[?&]edit=1/.test(location.search)) return;
         var sc = document.createElement('script');
-        sc.src = 'style/editor.js?v=20260901-f6';
+        sc.src = 'style/editor.js?v=20260901-f7';
         document.body.appendChild(sc);
     }
 

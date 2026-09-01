@@ -5,11 +5,12 @@ import jwt from 'jsonwebtoken';
 import bcrypt from 'bcryptjs';
 import { q } from './db.js';
 import { complete, providerReady, ProviderError } from './providers.js';
-import { fieldSchema, TABLES, ICONS } from './fields.js';
+import { fieldSchema, TABLES, ICONS, stripPrivate } from './fields.js';
 import { processUpload, removeFile, MediaError, MAX_UPLOAD } from './media.js';
 import { publishedContent, buildDraft, publish, latestVersion, restoreToDraft, draftStatus } from './content.js';
 import { transcriptFor, buildPDF, buildXLSX, extractTicket, pushWebhook, SkillError } from './skills.js';
 import { extractText, ExtractError, MAX_ATTACH_BYTES, MAX_PER_SESSION } from './extract.js';
+import { taskConfig, taskReady, listTasks, createTask, updateTask, whoAmI, TaskError } from './tasks.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
@@ -67,7 +68,10 @@ export function buildApp() {
       try { if (t) { jwt.verify(t, JWT_SECRET); draftOk = true; } } catch { /* diabaikan */ }
     }
 
-    const content = draftOk ? await buildDraft() : await publishedContent();
+    const raw = draftOk ? await buildDraft() : await publishedContent();
+    // Admin yang sudah login boleh melihat field rahasia (ia yang mengisinya);
+    // pengunjung tidak pernah.
+    const content = draftOk ? raw : { ...raw, settings: stripPrivate(raw.settings) };
     // Model dihitung langsung, tidak ikut dipotret: kesiapan provider
     // bergantung API key di environment, bukan pada isi konten.
     const models = (await q(
@@ -162,6 +166,46 @@ export function buildApp() {
       res.status(status).json({ error: 'Layanan AI sedang tidak tersedia. Coba lagi sebentar.', sessionId: sid });
     }
   });
+
+  // ═══════════════ TASK FOCUS ═══════════════
+  // Perantara ke sistem task. Token dan identitas ditentukan server, jadi
+  // pengunjung tidak bisa mengarahkan panggilan ini ke akun lain.
+
+  const taskGuard = (fn) => async (req, res) => {
+    const ip = String(clientIp(req));
+    if (rateLimited(ip)) return res.status(429).json({ error: 'Terlalu banyak permintaan. Coba lagi nanti.' });
+    try {
+      const cfg = await taskConfig();
+      if (!taskReady(cfg)) {
+        return res.status(503).json({ error: 'Panel task belum dikonfigurasi.', configured: false });
+      }
+      await fn(cfg, req, res);
+    } catch (e) {
+      if (e instanceof TaskError) return res.status(e.status).json({ error: e.message });
+      console.error('[task]', e);
+      res.status(500).json({ error: 'Gagal menghubungi sistem task.' });
+    }
+  };
+
+  app.get('/api/tasks', taskGuard(async (cfg, _req, res) => {
+    const tasks = await listTasks(cfg);
+    res.set('cache-control', 'no-store');
+    res.json({ configured: true, tasks });
+  }));
+
+  app.post('/api/tasks', taskGuard(async (cfg, req, res) => {
+    const t = await createTask(cfg, {
+      title: req.body?.title,
+      priority: req.body?.priority,
+      due: req.body?.due,
+    });
+    res.status(201).json({ task: t });
+  }));
+
+  app.patch('/api/tasks/:id', taskGuard(async (cfg, req, res) => {
+    const t = await updateTask(cfg, req.params.id, { status: req.body?.status, title: req.body?.title });
+    res.json({ task: t });
+  }));
 
   // ═══════════════ LAMPIRAN ═══════════════
   // Teks hasil ekstraksi disimpan; berkas aslinya TIDAK. Unggahan dari
@@ -403,6 +447,24 @@ export function buildApp() {
   });
 
   // ═══════════ TERBIT & RIWAYAT ═══════════
+
+  // Uji koneksi dari panel admin — menampilkan identitas yang diwakili,
+  // supaya salah nomor ketahuan sebelum tayang ke pengunjung.
+  admin.get('/tasks/check', async (_req, res) => {
+    const cfg = await taskConfig();
+    const missing = [];
+    if (!cfg.token) missing.push('TASK_API_TOKEN di berkas .env server');
+    if (!cfg.base) missing.push('Alamat API task');
+    if (!cfg.phone) missing.push('Nomor akun demo');
+    if (missing.length) return res.json({ ok: false, error: 'Belum lengkap: ' + missing.join(', ') + '.' });
+    try {
+      const who = await whoAmI(cfg);
+      const tasks = await listTasks(cfg);
+      res.json({ ok: true, who, count: tasks.length });
+    } catch (e) {
+      res.json({ ok: false, error: e instanceof TaskError ? e.message : 'Gagal menghubungi sistem task.' });
+    }
+  });
 
   admin.get('/status', async (_req, res) => res.json(await draftStatus()));
 

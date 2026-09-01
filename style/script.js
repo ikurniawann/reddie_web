@@ -682,63 +682,39 @@ function setupDashboardDemo() {
         
         switch (tabName) {
             case "Real-Time Discussion":
+                // Panel Task Focus. Kerangkanya dirender di sini; isinya diisi
+                // live.js dari /api/tasks setelah DOM siap, dan bertanda
+                // data-taskpanel supaya mudah ditemukan tanpa selektor rapuh.
                 statsHTML = `
                     <div class="stats-tabs">
-                        <span class="stats-tab active">Live Streams</span>
+                        <span class="stats-tab active" data-cms="console.task_tab">Task Focus</span>
                         <span class="stats-tab-more"><i class="fa-solid fa-ellipsis"></i></span>
                     </div>
                     <div class="stats-scroll-content">
-                        <div class="billing-card">
+                        <div class="billing-card" style="gap: 0.9rem;">
                             <div class="billing-header">
-                                <h3>Live Streams & SLA</h3>
-                                <span class="edit-icon"><i class="fa-solid fa-tower-broadcast"></i></span>
+                                <h3 data-cms="console.task_title">Task Aktif</h3>
+                                <span class="edit-icon"><i class="fa-solid fa-list-check" style="color: #ff3333;"></i></span>
                             </div>
-                            <div>
-                                <div class="section-label">ACTIVE CHATS</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type"><i class="fa-brands fa-whatsapp" style="color: #25d366; margin-right: 4px;"></i> WhatsApp Business</span>
-                                        <span class="dist-val">4 Active (99.8% SLA)</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type"><i class="fa-regular fa-comment" style="color: #0284c7; margin-right: 4px;"></i> Live Website Chat</span>
-                                        <span class="dist-val">2 Active (95.0% SLA)</span>
-                                    </div>
-                                    <div class="dist-card" style="grid-column: span 2;">
-                                        <span class="dist-type"><i class="fa-brands fa-telegram" style="color: #0088cc; margin-right: 4px;"></i> Telegram Channel</span>
-                                        <span class="dist-val">1 Active (100% SLA)</span>
-                                    </div>
-                                </div>
-                            </div>
-                            <div>
-                                <div class="section-label">LIVE AGENTS</div>
-                                <div class="avatars-row">
-                                    <div class="avatar-circle u1" title="Stark: Available">TS</div>
-                                    <div class="avatar-circle u2" title="Banner: Busy">BW</div>
-                                    <div class="avatar-circle u3" title="Romanoff: Offline">NR</div>
-                                </div>
-                            </div>
-                            <button class="btn-escalate" style="background: #22c55e;">Enable Autopilot</button>
-                            <div>
-                                <div class="section-label">LIVE METRICS</div>
-                                <div class="dist-grid">
-                                    <div class="dist-card"><span class="dist-type">Response Time</span><span class="dist-val">1.2s</span></div>
-                                    <div class="dist-card"><span class="dist-type">Interception</span><span class="dist-val">88%</span></div>
-                                </div>
+                            <p style="font-size: 0.8rem; color: #4b5563; margin-top: -0.8rem; margin-bottom: 0.2rem; line-height: 1.45;" data-cms="console.task_intro">
+                                Terhubung langsung ke sistem manajemen task. Tandai selesai atau tambah task baru dari sini.
+                            </p>
+                            <div data-taskpanel>
+                                <p style="font-size:0.78rem;color:#6b7280;margin:0;">Memuat task…</p>
                             </div>
                         </div>
                     </div>
                 `;
-                welcomeTitleText = "Real-Time Agent Console";
-                welcomeSubtitleText = "Simulate live chat intercept and automated autopilot reply.";
+                welcomeTitleText = "Task Focus Console";
+                welcomeSubtitleText = "Kelola task Anda lewat percakapan, tanpa pindah aplikasi.";
                 chipsHTML = `
-                    <button class="chip">Intervene chat</button>
-                    <button class="chip">View live transcript</button>
-                    <button class="chip">Trigger autopilot response</button>
-                    <button class="chip">Send greeting template</button>
+                    <button class="chip">Ringkas task saya hari ini</button>
+                    <button class="chip">Task mana yang paling mendesak?</button>
+                    <button class="chip">Buatkan task dari percakapan ini</button>
+                    <button class="chip">Apa yang belum selesai minggu ini?</button>
                 `;
                 break;
-                
+
             case "Task & Scheduling":
                 statsHTML = `
                     <div class="stats-tabs">
@@ -1131,6 +1107,8 @@ function setupDashboardDemo() {
         if (window.REDDIE_HYDRATE) {
             window.REDDIE_HYDRATE(tabName === 'Chat & Discussion' ? document : statsCol);
         }
+        // Panel Task Focus mengambil datanya sendiri setelah kerangkanya ada.
+        if (tabName === 'Real-Time Discussion' && window.REDDIE_TASKS) window.REDDIE_TASKS();
     }
     
     function getAgentMockResponse(query, turnNum) {

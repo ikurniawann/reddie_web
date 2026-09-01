@@ -71,7 +71,10 @@ export const FIELDS = {
   // Menu kolom kiri. Label bebas diubah — perilakunya dikunci atribut
   // data-key di HTML, jadi mengganti tulisan tidak merusak fungsinya.
   'console.menu_chat':         { label: 'Menu 1', type: 'text', max: 26, help: 'Menu kolom kiri. Mengubah tulisannya aman — fungsinya tidak ikut berubah.', value: 'Chat & Discussion' },
-  'console.menu_realtime':     { label: 'Menu 2', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Real-Time Discussion' },
+  'console.menu_realtime':     { label: 'Menu 2', type: 'text', max: 26, help: 'Menu kolom kiri. Menu ini menampilkan panel Task Focus yang terhubung ke sistem manajemen task.', value: 'Task Focus' },
+  'console.task_tab':   { label: 'Judul tab Task Focus',  type: 'text', max: 24, help: 'Tab di atas daftar task.', value: 'Task Focus' },
+  'console.task_title': { label: 'Judul kartu task',      type: 'text', max: 24, help: 'Judul di dalam kotak putih panel Task Focus.', value: 'Task Aktif' },
+  'console.task_intro': { label: 'Penjelasan panel task', type: 'textarea', max: 160, help: 'Paragraf pengantar di atas daftar task.', value: 'Terhubung langsung ke sistem manajemen task. Tandai selesai atau tambah task baru dari sini.' },
   'console.menu_task':         { label: 'Menu 3', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Task & Scheduling' },
   'console.menu_analyze':      { label: 'Menu 4', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Analyze' },
   'console.menu_research':     { label: 'Menu 5', type: 'text', max: 26, help: 'Menu kolom kiri.', value: 'Research' },
@@ -131,9 +134,19 @@ export const FIELDS = {
 
   // ── Integrasi ───────────────────────────────────────────
   'integrations.webhook_url': {
-    label: 'Alamat webhook otomasi', type: 'url', max: 300,
+    label: 'Alamat webhook otomasi', type: 'url', max: 300, private: true,
     help: 'Setiap kali pengunjung menekan tombol Sync, ringkasan percakapan dikirim ke alamat ini. Cocok diisi URL webhook n8n. Boleh dikosongkan — tombolnya tetap berfungsi menyimpan tiket, hanya tidak mengirim ke mana-mana.',
     value: '',
+  },
+  'integrations.task_phone': {
+    label: 'Nomor akun demo Task Focus', type: 'text', max: 20, private: true,
+    help: 'Nomor telepon pengguna di ingat.reddie.id yang diwakili Reddie saat membaca dan membuat task. Gunakan akun demo berisi task contoh — bukan akun pribadi, karena pengunjung bisa membuat dan menyelesaikan task di dalamnya.',
+    value: '',
+  },
+  'integrations.task_base': {
+    label: 'Alamat API task', type: 'url', max: 200, private: true,
+    help: 'Basis API manajemen task. Kosongkan untuk mematikan panel Task Focus.',
+    value: 'https://ingat.reddie.id/api/agent',
   },
   'integrations.sync_label': {
     label: 'Judul kartu hasil sync', type: 'text', max: 40,
@@ -152,11 +165,37 @@ export function defaultSettings() {
   return out;
 }
 
+// Field bertanda private TIDAK pernah ikut ke /api/content publik.
+// Alamat webhook dan nomor akun bukan konten situs: keduanya kredensial
+// operasional yang kebetulan disimpan di tabel yang sama.
+export function privateKeys() {
+  const out = {};
+  for (const [key, def] of Object.entries(FIELDS)) {
+    if (!def.private) continue;
+    const [g, f] = key.split('.');
+    (out[g] ||= []).push(f);
+  }
+  return out;
+}
+
+// Buang field rahasia dari salinan settings sebelum disajikan ke publik.
+export function stripPrivate(settings) {
+  const priv = privateKeys();
+  const out = {};
+  for (const [g, vals] of Object.entries(settings || {})) {
+    if (!priv[g]) { out[g] = vals; continue; }
+    const copy = { ...vals };
+    for (const f of priv[g]) delete copy[f];
+    out[g] = copy;
+  }
+  return out;
+}
+
 // Metadata tanpa nilai — dikirim ke admin & editor untuk membangun form.
 export function fieldSchema() {
   const out = {};
   for (const [key, def] of Object.entries(FIELDS)) {
-    out[key] = { label: def.label, type: def.type, help: def.help || null, max: def.max || null };
+    out[key] = { label: def.label, type: def.type, help: def.help || null, max: def.max || null, private: !!def.private };
   }
   return { groups: GROUPS, fields: out };
 }
