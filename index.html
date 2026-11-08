@@ -11,7 +11,7 @@
     <!-- Font Awesome for clean SaaS UI icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="style/style.css?v=20260902-g1">
+    <link rel="stylesheet" href="style/style.css?v=20261108-p1">
 </head>
 <body>
 
@@ -205,7 +205,7 @@
                         <div class="db-chat-col">
                             <div class="chat-viewport" id="chatViewport">
                                 <div class="chat-welcome-state" id="chatWelcomeState">
-                                    <video src="assets/Reddie-Head-Video.mp4?v=20260902-g1" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
+                                    <video src="assets/Reddie-Head-Video.mp4?v=20261108-p1" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
                                     
                                     <div class="chat-welcome-content">
                                         <div class="chat-welcome-header">
@@ -299,6 +299,7 @@
 
         <!-- CONTACT SECTION -->
         <section class="page-section section-contact" id="section-contact">
+          <div class="contact-layout">
             <div class="glass-card contact-card">
                 <h2 class="section-title" data-cms="contact.title">GET IN TOUCH</h2>
                 <div class="card-line"></div>
@@ -329,6 +330,71 @@
                     <p data-cms="contact.success_body">Thank you for reaching out. The Reddie team will get back to you shortly.</p>
                 </div>
             </div>
+
+            <!-- PRICING: harga tahunan = bulanan × 12 dikurangi 20%, dihitung di script.js -->
+            <div class="glass-card pricing-card" id="pricingCard">
+                <h2 class="pricing-title" data-cms="pricing.title">PRICING &amp; SUBSCRIPTION</h2>
+                <p class="pricing-subtitle" data-cms="pricing.subtitle">Choose the right plan for your team. Upgrade, downgrade, or cancel anytime.</p>
+
+                <div class="billing-row">
+                    <div class="billing-toggle" role="tablist" aria-label="Billing period">
+                        <button type="button" class="billing-opt active" data-billing="monthly" role="tab" aria-selected="true" data-cms="pricing.monthly">Monthly</button>
+                        <button type="button" class="billing-opt" data-billing="yearly" role="tab" aria-selected="false" data-cms="pricing.yearly">Yearly</button>
+                    </div>
+                    <span class="billing-save" data-cms="pricing.save">Save up to 20%</span>
+                </div>
+
+                <div class="plan-grid">
+                    <article class="plan-card" data-plan="Starter" data-monthly="1000000">
+                        <div class="plan-icon"><i class="fa-solid fa-cube"></i></div>
+                        <h3 class="plan-name" data-cms="pricing.starter_name">Starter</h3>
+                        <p class="plan-desc" data-cms="pricing.starter_desc">Get started with essential AI agent features.</p>
+                        <div class="plan-price"><span class="plan-amount">Rp 1.000.000</span> <span class="plan-per">/month</span></div>
+                        <p class="plan-billed"></p>
+                        <div class="plan-seats" data-cms="pricing.starter_seats">1 Agent</div>
+                        <ul class="plan-features">
+                            <li data-cms="pricing.starter_f1">1 AI Agent</li>
+                            <li data-cms="pricing.starter_f2">Basic automation</li>
+                            <li data-cms="pricing.starter_f3">Standard support</li>
+                        </ul>
+                        <button type="button" class="plan-btn plan-btn-outline" data-cms="pricing.starter_cta">Subscribe</button>
+                    </article>
+
+                    <article class="plan-card plan-popular" data-plan="Pro" data-monthly="2000000">
+                        <span class="plan-badge" data-cms="pricing.popular">Popular</span>
+                        <div class="plan-icon plan-icon-red"><i class="fa-solid fa-bolt"></i></div>
+                        <h3 class="plan-name" data-cms="pricing.pro_name">Pro</h3>
+                        <p class="plan-desc" data-cms="pricing.pro_desc">Scale your automation with more power &amp; flexibility.</p>
+                        <div class="plan-price"><span class="plan-amount">Rp 2.000.000</span> <span class="plan-per">/month</span></div>
+                        <p class="plan-billed"></p>
+                        <div class="plan-seats" data-cms="pricing.pro_seats">5 Agents</div>
+                        <ul class="plan-features">
+                            <li data-cms="pricing.pro_f1">Up to 5 AI Agents</li>
+                            <li data-cms="pricing.pro_f2">Advanced automation</li>
+                            <li data-cms="pricing.pro_f3">Integration (API, Telegram, etc.)</li>
+                            <li data-cms="pricing.pro_f4">Priority support</li>
+                        </ul>
+                        <button type="button" class="plan-btn plan-btn-red" data-cms="pricing.pro_cta">Subscribe</button>
+                    </article>
+
+                    <article class="plan-card" data-plan="Enterprise" data-monthly="5000000">
+                        <div class="plan-icon"><i class="fa-solid fa-layer-group"></i></div>
+                        <h3 class="plan-name" data-cms="pricing.ent_name">Enterprise</h3>
+                        <p class="plan-desc" data-cms="pricing.ent_desc">For teams and organizations with advanced needs.</p>
+                        <div class="plan-price"><span class="plan-amount">Rp 5.000.000</span> <span class="plan-per">/month</span></div>
+                        <p class="plan-billed"></p>
+                        <div class="plan-seats" data-cms="pricing.ent_seats">Custom (10+ Agents)</div>
+                        <ul class="plan-features">
+                            <li data-cms="pricing.ent_f1">10+ AI Agents (custom)</li>
+                            <li data-cms="pricing.ent_f2">Full integration &amp; SSO</li>
+                            <li data-cms="pricing.ent_f3">Dedicated support</li>
+                            <li data-cms="pricing.ent_f4">Custom solution &amp; SLA</li>
+                        </ul>
+                        <button type="button" class="plan-btn plan-btn-outline" data-cms="pricing.ent_cta">Contact Sales</button>
+                    </article>
+                </div>
+            </div>
+          </div>
         </section>
         
     </main>
@@ -388,7 +454,7 @@
     </div>
 
     <!-- Main JavaScript File -->
-    <script src="style/script.js?v=20260902-g1"></script>
-    <script src="style/live.js?v=20260902-g1"></script>
+    <script src="style/script.js?v=20261108-p1"></script>
+    <script src="style/live.js?v=20261108-p1"></script>
 </body>
 </html>

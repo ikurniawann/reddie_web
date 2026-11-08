@@ -10,6 +10,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupIntersectionObserver();
     setupSmoothScrolling();
     setupContactForm();
+    setupPricing();
     setupDashboardDemo();
 });
 
@@ -1806,3 +1807,57 @@ document.addEventListener('DOMContentLoaded', function() {
     setupAboutCarousel();
     setupLoginModal();
 });
+
+// Paket langganan di section Contact. Harga bulanan ada di data-monthly tiap
+// kartu; tahunan = 12 bulan dikurangi 20% (badge "Save up to 20%"), ditampilkan
+// per bulan plus total yang ditagih setahun. Tombol paket mengisi formulir
+// kontak — belum ada pembayaran online, tim Reddie yang menindaklanjuti.
+function setupPricing() {
+    const card = document.getElementById('pricingCard');
+    if (!card) return;
+    const YEARLY_DISCOUNT = 0.2;
+    const rupiah = (n) => 'Rp ' + Math.round(n).toLocaleString('id-ID');
+    let billing = 'monthly';
+
+    const render = () => {
+        card.querySelectorAll('.billing-opt').forEach((btn) => {
+            const on = btn.dataset.billing === billing;
+            btn.classList.toggle('active', on);
+            btn.setAttribute('aria-selected', on ? 'true' : 'false');
+        });
+        card.querySelectorAll('.plan-card').forEach((plan) => {
+            const monthly = Number(plan.dataset.monthly) || 0;
+            const perMonth = billing === 'yearly' ? monthly * (1 - YEARLY_DISCOUNT) : monthly;
+            plan.querySelector('.plan-amount').textContent = rupiah(perMonth);
+            plan.querySelector('.plan-billed').textContent =
+                billing === 'yearly' ? 'Billed yearly ' + rupiah(perMonth * 12) : '';
+        });
+    };
+
+    card.querySelectorAll('.billing-opt').forEach((btn) => {
+        btn.addEventListener('click', () => { billing = btn.dataset.billing; render(); });
+    });
+
+    card.querySelectorAll('.plan-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+            const plan = btn.closest('.plan-card');
+            const message = document.getElementById('message');
+            if (!plan || !message) return;
+            const period = billing === 'yearly' ? 'yearly' : 'monthly';
+            message.value = `Hi Reddie team, I'm interested in the ${plan.dataset.plan} plan (${period}, ` +
+                `${plan.querySelector('.plan-amount').textContent}/month). Please contact me.`;
+            const form = document.getElementById('contactForm');
+            const success = document.getElementById('formSuccessMessage');
+            if (form && success && success.classList.contains('active')) {
+                success.classList.remove('active');
+                form.style.display = '';
+                form.style.opacity = '1';
+            }
+            const name = document.getElementById('name');
+            (name && !name.value ? name : message).focus({ preventScroll: true });
+            document.querySelector('.contact-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+        });
+    });
+
+    render();
+}
