@@ -3340,6 +3340,72 @@ body {
     transform: translateY(-2px);
 }
 
+/* Enterprise: bonus ERP Reddie OS (rederp.reddie.id) */
+.plan-erp {
+    margin: -0.4rem 0 1.1rem;
+    padding: 0.8rem 0.85rem 0.75rem;
+    border-radius: 10px;
+    background: rgba(255, 51, 51, 0.08);
+    border: 1px solid rgba(255, 51, 51, 0.35);
+}
+
+.plan-erp-head {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.02em;
+    color: #ffffff;
+    margin-bottom: 0.5rem;
+}
+
+.plan-erp-head i {
+    color: #ff5c5c;
+    margin-right: 0.25rem;
+}
+
+.plan-erp-list {
+    list-style: none;
+    padding: 0;
+    margin: 0 0 0.55rem;
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+}
+
+.plan-erp-list li {
+    position: relative;
+    padding-left: 0.95rem;
+    font-size: 0.76rem;
+    line-height: 1.35;
+    color: #e4e4e7;
+}
+
+.plan-erp-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0.45em;
+    width: 5px;
+    height: 5px;
+    border-radius: 50%;
+    background: #ff3333;
+}
+
+.plan-erp-link {
+    font-size: 0.76rem;
+    font-weight: 700;
+    color: #ff6b6b;
+    text-decoration: none;
+}
+
+.plan-erp-link:hover {
+    color: #ff8f8f;
+    text-decoration: underline;
+}
+
+.plan-erp-link i {
+    font-size: 0.65rem;
+}
+
 @media (max-width: 1480px) {
     .plan-card {
         padding: 1.2rem 1.05rem 1.1rem;
@@ -3352,8 +3418,8 @@ body {
     }
 }
 
-/* Layar laptop pendek (≤ 860px): rapatkan supaya kedua kartu muat tanpa digulir. */
-@media (max-height: 860px) and (min-width: 1181px) {
+/* Layar ≤ 1000px tingginya: rapatkan supaya kedua kartu muat tanpa digulir. */
+@media (max-height: 1000px) and (min-width: 1181px) {
     .contact-layout {
         padding: 0.6rem 0;
     }
@@ -3401,6 +3467,63 @@ body {
     }
     .plan-btn {
         padding: 0.65rem 1rem;
+    }
+    .plan-desc {
+        min-height: 0;
+    }
+    .plan-erp {
+        margin-bottom: 0.8rem;
+        padding: 0.6rem 0.75rem;
+    }
+    .plan-erp-list {
+        gap: 0.2rem;
+    }
+}
+
+/* Laptop 768px: ikon paket disembunyikan, baris tagihan kosong tidak memakan tempat. */
+@media (max-height: 820px) and (min-width: 1181px) {
+    .plan-icon {
+        display: none;
+    }
+    .plan-badge {
+        top: 0.7rem;
+    }
+    .plan-billed:empty {
+        display: none;
+    }
+    .plan-desc {
+        display: none;
+    }
+    .plan-name {
+        margin-bottom: 0.5rem;
+    }
+    .pricing-subtitle,
+    .contact-layout .contact-subtitle {
+        margin-bottom: 0.8rem;
+    }
+    .plan-price {
+        margin-bottom: 0.6rem;
+    }
+    .contact-layout .glass-card {
+        padding: 1.2rem 1.6rem;
+    }
+    .contact-layout {
+        padding: 0;
+    }
+    .billing-row {
+        margin-bottom: 0.7rem;
+    }
+    .plan-card {
+        padding: 1rem 1rem 0.9rem;
+    }
+    .plan-seats {
+        margin-bottom: 0.55rem;
+    }
+    .plan-features {
+        margin-bottom: 0.7rem;
+    }
+    .plan-erp {
+        margin-bottom: 0.65rem;
     }
 }
 
