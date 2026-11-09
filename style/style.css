@@ -3664,6 +3664,7 @@ body {
 
 .trial-btn {
     display: inline-flex;
+    text-decoration: none;
     align-items: center;
     gap: 0.55rem;
     font: inherit;
