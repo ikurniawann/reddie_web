@@ -11,7 +11,7 @@
     <!-- Font Awesome for clean SaaS UI icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <!-- Main Stylesheet -->
-    <link rel="stylesheet" href="style/style.css?v=20261108-p2">
+    <link rel="stylesheet" href="style/style.css?v=20261109-t1">
 </head>
 <body>
 
@@ -205,7 +205,7 @@
                         <div class="db-chat-col">
                             <div class="chat-viewport" id="chatViewport">
                                 <div class="chat-welcome-state" id="chatWelcomeState">
-                                    <video src="assets/Reddie-Head-Video.mp4?v=20261108-p2" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
+                                    <video src="assets/Reddie-Head-Video.mp4?v=20261109-t1" autoplay loop muted playsinline class="chat-welcome-video-bg"></video>
                                     
                                     <div class="chat-welcome-content">
                                         <div class="chat-welcome-header">
@@ -300,6 +300,7 @@
         <!-- CONTACT SECTION -->
         <section class="page-section section-contact" id="section-contact">
           <div class="contact-layout">
+           <div class="contact-stack">
             <div class="glass-card contact-card">
                 <h2 class="section-title" data-cms="contact.title">GET IN TOUCH</h2>
                 <div class="card-line"></div>
@@ -330,6 +331,22 @@
                     <p data-cms="contact.success_body">Thank you for reaching out. The Reddie team will get back to you shortly.</p>
                 </div>
             </div>
+
+            <!-- TRIAL: ajakan mencoba sistem; tombol utama mengisi form di atas (script.js setupTrial) -->
+            <div class="glass-card trial-card" id="trialCard">
+                <div class="trial-glow" aria-hidden="true"></div>
+                <div class="trial-body">
+                    <span class="trial-badge"><i class="fa-solid fa-bolt"></i> <span data-cms="trial.badge">7-DAY FREE TRIAL</span></span>
+                    <h3 class="trial-title" data-cms="trial.title">Try Reddie OS for free</h3>
+                    <p class="trial-text" data-cms="trial.text">7 days to put AI agents, POS, accounting &amp; BI to work on your business. Our team sets it up with you.</p>
+                    <div class="trial-actions">
+                        <button type="button" class="trial-btn" id="trialStartBtn"><span data-cms="trial.cta">Start Free Trial</span> <i class="fa-solid fa-arrow-right"></i></button>
+                        <a href="#section-try" class="trial-link" data-cms="trial.demo">Try the demo</a>
+                    </div>
+                </div>
+                <img src="assets/Reddie-Trial.webp?v=20261109-t1" alt="Reddie" class="trial-reddie" loading="lazy">
+            </div>
+           </div>
 
             <!-- PRICING: harga tahunan = bulanan × 12 dikurangi 20%, dihitung di script.js -->
             <div class="glass-card pricing-card" id="pricingCard">
@@ -464,7 +481,7 @@
     </div>
 
     <!-- Main JavaScript File -->
-    <script src="style/script.js?v=20261108-p2"></script>
-    <script src="style/live.js?v=20261108-p2"></script>
+    <script src="style/script.js?v=20261109-t1"></script>
+    <script src="style/live.js?v=20261109-t1"></script>
 </body>
 </html>

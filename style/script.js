@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
     setupSmoothScrolling();
     setupContactForm();
     setupPricing();
+    setupTrial();
     setupDashboardDemo();
 });
 
@@ -1860,4 +1861,25 @@ function setupPricing() {
     });
 
     render();
+}
+
+// Kartu trial di bawah "Get in touch": isi pesan form kontak lalu fokuskan.
+function setupTrial() {
+    const btn = document.getElementById('trialStartBtn');
+    if (!btn) return;
+    btn.addEventListener('click', () => {
+        const message = document.getElementById('message');
+        if (!message) return;
+        message.value = "Hi Reddie team, I'd like to start the 7-day free trial of Reddie OS for my business. Please contact me.";
+        const form = document.getElementById('contactForm');
+        const success = document.getElementById('formSuccessMessage');
+        if (form && success && success.classList.contains('active')) {
+            success.classList.remove('active');
+            form.style.display = '';
+            form.style.opacity = '1';
+        }
+        const name = document.getElementById('name');
+        (name && !name.value ? name : message).focus({ preventScroll: true });
+        document.querySelector('.contact-card')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    });
 }
